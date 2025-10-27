@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+#archivos de configuración 
+backend/config/serviceAccountKey.json
+frontend/src/auth/firebaseConfig.js

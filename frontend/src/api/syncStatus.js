@@ -1,0 +1,9 @@
+//frontend/src/api/syncStatus.js
+export const SYNC_STATUS = {
+    SYNCHRONIZED: 'SYNCHRONIZED',
+    PENDING_CREATE: 'PENDING_CREATE',
+    PENDING_UPDATE: 'PENDING_UPDATE',
+    PENDING_DELETE: 'PENDING_DELETE',
+    ERROR: 'ERROR', 
+};
+

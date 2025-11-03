@@ -42,6 +42,8 @@ const HomeScreen = ({ navigation }) => {
     
 
       <Button title="Ver mi Perfil" onPress={() => navigation.navigate('Profile')} />
+      <Button title="configuracion" onPress={() => navigation.navigate('Settings')} />
+      <Button title="Ver Foros" onPress={() => navigation.navigate('ForoList')} />
       <Button title="Cerrar Sesión" onPress={logout} color="red" />
     </View>
   );

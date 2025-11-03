@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }) => {
                     setUser(firebaseUser);
                     const token = await firebaseUser.getIdToken();
                     await AsyncStorage.setItem('userToken', token);
+                    
                     setUserToken(token);
                 } catch (error) {
                     console.error('Error during onAuthStateChanged processing:', error);

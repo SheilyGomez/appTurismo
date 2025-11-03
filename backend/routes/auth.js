@@ -7,7 +7,6 @@ const authMiddleware = require('../middlewares/authMiddleware'); // Necesitas el
 
 // Rutas para autenticación
 router.post('/register', registrarUsuario);
-router.post('/login', iniciarSesion);
 router.get('/profile', authMiddleware, getUserProfile); // Ruta protegida con el middleware
 
 module.exports = router;

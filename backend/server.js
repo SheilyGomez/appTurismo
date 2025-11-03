@@ -24,6 +24,11 @@ app.use(cors());
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+// Rutas de foros
+const foroRoutes = require('./routes/foro');
+app.use('/api/foros', foroRoutes);
+
+
 // Rutas de lugares turísticos (no funcional)
 const lugaresRoutes = require('./routes/lugarTuristico');
 app.use('/api/lugares', lugaresRoutes);

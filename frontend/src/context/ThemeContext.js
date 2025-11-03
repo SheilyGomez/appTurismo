@@ -39,7 +39,7 @@ export const ThemeProvider = ({children})=>{
             text: darkMode ? '#fff' : '#030d69ff',
             primary: darkMode ? '#61dafb' : '#007bff',
             secondary: darkMode ? '#f0f0f0' : '#6c757d',
-            sub_background: darkMode ? '#515155a4' : '#f8f9fa',
+            sub_background: darkMode ? '#515155a4' : '#e8eaecff',
             button: darkMode ? '#5962b9ff' : '#030d69ff',
             buttonText: darkMode ? '#fff' : '#fff',
             editbutton: darkMode ? '#ffd965ff':'#ffc107',

@@ -2,16 +2,17 @@
 const express = require('express');
 const router = express.Router();
 const {getForo, createForo, getForoDetails, addComentario} = require('../controllers/foroController');
-const authMiddleware = require('../middlewares/authMiddleware'); // Asumiendo que tienes uno
+const authMiddleware = require('../middlewares/authMiddleware');
 
-// Rutas para foros
+// Ya NO necesitamos multer ni la configuración de upload aquí
+
 router.get('/', getForo);
-router.post('/newforo', authMiddleware,createForo);
+// La ruta ahora solo espera el authMiddleware y luego createForo
+router.post('/newforo', authMiddleware, createForo);
 
 router.get('/:foroId', getForoDetails);
 
-// Rutas para comentarios
-//router.post('/:foro/comentarios', authMiddleware, foroController.addComentario);
-router.post('/addcomentarios',authMiddleware ,addComentario);
+// La ruta de comentarios también se simplifica
+router.post('/addcomentarios', authMiddleware, addComentario);
 
 module.exports = router;

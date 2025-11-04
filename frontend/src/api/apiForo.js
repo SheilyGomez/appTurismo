@@ -10,10 +10,14 @@ export const getForumsAPI = async () => {
     }
 };
 
-export const createForumAPI = async (forumData) => {
+export const createForumAPI = async (formData) => { // AHORA RECIBE formData
     try {
-        // Asegúrate de que las propiedades coincidan con tu backend (titulo, descripcion, imagenUrl)
-        const response = await client.post('/api/foros/newforo', forumData);
+        // Axios automáticamente establecerá el Content-Type a multipart/form-data
+        // cuando detecta que el 'data' es una instancia de FormData.
+        console.log('Creating forum with formData:', formData);
+        const response = await client.post('/api/foros/newforo', 
+            formData);
+        
         return response.data;
     } catch (error) {
         console.error('Error creating forum:', error);
@@ -22,8 +26,8 @@ export const createForumAPI = async (forumData) => {
 };
 
 export const getForumDetailsAPI = async (forumId) => {
+    const response = await client.get(`/api/foros/${forumId}`);
     try {
-        const response = await client.get(`/api/foros/${forumId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching forum ${forumId} details:`, error);
@@ -31,10 +35,11 @@ export const getForumDetailsAPI = async (forumId) => {
     }
 };
 
-export const addCommentAPI = async (commentData) => { // forumId se pasa dentro de commentData
+export const addCommentAPI = async (formData) => { // AHORA RECIBE formData
+    console.log('Adding comment with formData:', formData);
     try {
-        // Asegúrate de que la ruta y las propiedades coincidan con tu backend
-        const response = await client.post('/api/foros/addcomentarios', commentData);
+        
+        const response = await client.post('/api/foros/addcomentarios', formData);
         return response.data;
     } catch (error) {
         console.error(`Error adding comment:`, error);

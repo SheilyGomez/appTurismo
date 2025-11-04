@@ -2,51 +2,38 @@ import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ThemeContext } from '../context/ThemeContext';
-import { createForumAPI } from '../api/apiForo'; // Asegúrate de que el path sea correcto
+import { createForumAPI } from '../api/apiForo';
 import { useAuth } from '../auth/AuthContext';
-// Importa lo necesario para subir imágenes (ej. ImagePicker, Firebase Storage)
-// import * as ImagePicker from 'expo-image-picker';
-// import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-// import { getApp } from 'firebase/app'; // Asegúrate de importar getApp para obtener la instancia de la app
+import * as ImagePicker from 'expo-image-picker';
 
 const CrearForoScreen = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [imageUrl, setImageUrl] = useState('');
+    const [selectedImage, setSelectedImage] = useState(null); // Objeto asset de la imagen
     const [creating, setCreating] = useState(false);
     const navigation = useNavigation();
     const { colors } = useContext(ThemeContext);
     const { user } = useAuth();
 
-    // Función para seleccionar imagen (requiere expo-image-picker y Firebase Storage)
-    /*
     const pickImage = async () => {
-        // Asegúrate de que Firebase Storage esté inicializado con la app de Firebase
-        // const app = getApp(); // Obtén la instancia de tu app de Firebase
-        // const storage = getStorage(app); // Pasa la app a getStorage
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar imágenes.');
+            return;
+        }
 
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1,
+            quality: 0.7, // Reduce la calidad
+            // Ya NO necesitamos base64: true porque Multer manejará el archivo binario directamente
         });
 
         if (!result.canceled) {
-            // Subir la imagen a Firebase Storage
-            const uri = result.assets[0].uri;
-            const filename = uri.substring(uri.lastIndexOf('/') + 1);
-            const storageRef = ref(storage, `forum_images/${filename}`);
-            const img = await fetch(uri);
-            const bytes = await img.blob();
-
-            await uploadBytes(storageRef, bytes);
-            const downloadURL = await getDownloadURL(storageRef);
-            setImageUrl(downloadURL); // Guarda la URL de descarga
-            Alert.alert('Éxito', 'Imagen subida correctamente.');
+            setSelectedImage(result.assets[0]); // Guarda el objeto asset de la imagen
         }
     };
-    */
 
     const handleCreateForum = async () => {
         if (!title.trim() || !description.trim()) {
@@ -60,19 +47,32 @@ const CrearForoScreen = () => {
 
         setCreating(true);
         try {
-            const forumData = {
-                titulo: title,       // Coincide con tu backend
-                descripcion: description, // Coincide con tu backend
-                //imagenUrl: imageUrl, // Coincide con tu backend
-                imagenUrl: "../../../assets/_.jpeg", // Coincide con tu backend
-                // userId y userName no son necesarios aquí ya que el backend los obtiene de req.user
-            };
-            await createForumAPI(forumData);
+            // 1. Crear un objeto FormData
+            const formData = new FormData();
+
+            // 2. Adjuntar los campos de texto
+            formData.append('titulo', title);
+            formData.append('descripcion', description);
+            // userId y userName los obtendrá el backend de req.user (del token de autenticación)
+
+            // 3. Adjuntar la imagen si existe
+            if (selectedImage) {
+                // El campo 'imagen' debe coincidir con el nombre esperado en Multer (upload.single('imagen'))
+                formData.append('imagen', {
+                    uri: selectedImage.uri,
+                    name: selectedImage.fileName || `upload_${Date.now()}.jpg`, // Nombre único para el archivo
+                    type: selectedImage.mimeType || 'image/jpeg', // Tipo MIME del archivo
+                });
+            }
+            
+            // 4. Enviar el FormData a la API
+            await createForumAPI(formData);
+            
             Alert.alert('Éxito', 'Tema del foro creado exitosamente.');
-            navigation.goBack(); // Regresa a la lista de foros
+            navigation.goBack();
         } catch (error) {
             Alert.alert('Error', 'No se pudo crear el tema del foro.');
-            console.error('Error creating forum:', error);
+            console.error('Error creating forum:', error.response ? error.response.data : error.message);
         } finally {
             setCreating(false);
         }
@@ -101,33 +101,30 @@ const CrearForoScreen = () => {
                 editable={!creating}
             />
 
-            {/* Sección para subir imagen - descomentar y habilitar si implementas ImagePicker */}
-            {/*
             <TouchableOpacity
                 style={[styles.imagePickerButton, { backgroundColor: colors.secondary }]}
                 onPress={pickImage}
                 disabled={creating}
             >
-                <Text style={{ color: colors.buttonText }}>Seleccionar Imagen (Opcional)</Text>
+                <Text style={{ color: colors.buttonText }}>{selectedImage ? "Cambiar Imagen" : "Seleccionar Imagen (Opcional)"}</Text>
             </TouchableOpacity>
-            {imageUrl ? (
-                <Image source={{ uri: imageUrl }} style={styles.previewImage} />
+            {selectedImage ? (
+                <Image source={{ uri: selectedImage.uri }} style={styles.previewImage} />
             ) : (
                 <Text style={{ color: colors.text, marginBottom: 10 }}>No hay imagen seleccionada</Text>
             )}
-            */}
-
 
             <Button
                 title={creating ? "Creando..." : "Crear Tema"}
                 onPress={handleCreateForum}
-                disabled={creating || !title.trim() || !description.trim()}
+                disabled={creating || (!title.trim() && !description.trim())} // Deshabilita si no hay título o descripción
                 color={colors.primary}
             />
         </ScrollView>
     );
 };
 
+// ... (tus estilos permanecen igual)
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,

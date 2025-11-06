@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthService from './AuthService';
-import { auth } from './firebaseConfig';
+import { auth } from './firebaseConfigEjemplo';
 import { onAuthStateChanged } from 'firebase/auth';
 import { startConnectivityListener, stopConnectivityListener } from '../api/perfilSyncService'; // Solo iniciar/detener el listener global
 

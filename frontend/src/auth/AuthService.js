@@ -1,5 +1,5 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from './firebaseConfig';
+import { auth } from './firebaseConfigEjemplo';
 import api from '../api/api'; // Para llamar al backend
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

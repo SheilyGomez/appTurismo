@@ -6,7 +6,8 @@ import HomeScreen from './frontend/src/screens/HomeScreen';
 import ProfileScreen from './frontend/src/screens/ProfileScreen';
 import PaymentScreen from './frontend/src/screens/PaymentScreen';
 import DestinationDetailScreen from './frontend/src/screens/DestinationDetailScreen';
-
+import ActivityFormScreen from './frontend/src/screens/ActivityFormScreen';
+import PlanningScreen from './frontend/src/screens/PlanningScreen';
 
 const AuthStack = createStackNavigator();
 const MainAppStack = createStackNavigator();
@@ -27,6 +28,9 @@ const AppMainNavigator = () => {
       <MainAppStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi Perfil' }} />
       <MainAppStack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pago' }} />
       <MainAppStack.Screen name="DestinationDetail" component={DestinationDetailScreen} options={{ title: 'Detalles' }} />
+      {/* Agregar las nuevas pantallas */}
+      <MainAppStack.Screen name="Planning" component={PlanningScreen} options={{ title: 'Mi Planificación' }} />
+      <MainAppStack.Screen name="ActivityForm" component={ActivityFormScreen} options={{ title: 'Nueva Actividad' }} />
     </MainAppStack.Navigator>
   );
 };

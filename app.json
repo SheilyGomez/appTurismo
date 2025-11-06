@@ -26,7 +26,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "La app necesita acceso a tu calendario para guardar eventos.",
+          "remindersPermission": "La app necesita acceso a tus recordatorios."
+        }
+      ]
     ]
   }
 }

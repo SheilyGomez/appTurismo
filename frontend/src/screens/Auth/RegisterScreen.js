@@ -9,7 +9,6 @@ import {
   ScrollView,
   ImageBackground,
   Platform,
-  Button // Se usará un botón para abrir el picker de fecha en iOS
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -139,7 +138,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder="Correo Electrónico"
-              placeholderTextColor="#bbb"
+              placeholderTextColor="#ffffffff"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -151,7 +150,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder="Contraseña"
-              placeholderTextColor="#bbb"
+              placeholderTextColor="#ffffffff"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -163,7 +162,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder="Nombre de Usuario"
-              placeholderTextColor="#bbb"
+              placeholderTextColor="#ffffffff"
               value={nombreUsuario}
               onChangeText={setNombreUsuario}
             />
@@ -173,7 +172,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder="Nombre Completo"
-              placeholderTextColor="#bbb"
+              placeholderTextColor="#ffffffff"
               value={nombreCompleto}
               onChangeText={setNombreCompleto}
             />
@@ -230,7 +229,7 @@ const RegisterScreen = ({ navigation }) => {
               mode="BADGE"
               badgeColors={['#FF6F61']}
               badgeDotColors={['white']}
-              badgeTextStyle={{ color: '#FFFFFF', fontSize: 14 }}
+              badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
               badgeContainerStyle={{ marginHorizontal: 2 }}
               dropDownContainerStyle={styles.dropdownMenuContainer}
               selectedItemContainerStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
@@ -322,7 +321,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder="Fecha de Nacimiento"
-              placeholderTextColor="#bbb"
+              placeholderTextColor="#ffffffff"
               value={fechaDeNacimiento}
               editable={false} // Para que el usuario no escriba, solo use el picker
             />
@@ -336,7 +335,7 @@ const RegisterScreen = ({ navigation }) => {
               display={Platform.OS === 'ios' ? 'spinner' : 'default'} // 'spinner' para iOS, 'default' para Android
               onChange={onChangeDate}
               maximumDate={new Date()} // No permitir fechas futuras
-              themeVariant="dark" // Para que se vea bien en tu fondo oscuro
+              themeVariant="dark" // Para que se vea bien en el fondo oscuro
             />
           )}
 
@@ -392,7 +391,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.29)',
+    backgroundColor: 'rgba(145, 140, 140, 0.72)',
     borderRadius: 30,
     marginBottom: 15,
     paddingHorizontal: 15,
@@ -446,7 +445,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'Roboto-Bold',
   },
   placeholderText: {
-    color: '#bbb',
+    color: '#ffffffff',
     fontSize: 16,
   },
   dropdownContainer: {
@@ -454,7 +453,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   dropdownStyle: {
-    backgroundColor: 'rgba(255, 255, 255, 0.29)',
+    backgroundColor: 'rgba(145, 140, 140, 0.72)',
     borderRadius: 30,
     borderWidth: 0,
     minHeight: 55,
@@ -465,7 +464,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   dropdownMenuContainer: {
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.86)',
     borderRadius: 15,
     borderWidth: 0,
     marginTop: 5,

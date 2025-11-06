@@ -1,11 +1,12 @@
 class ComentarioForoSchema {
-    constructor(id, foroId, userId, userName, texto, imagenUrl, fechaCreacion, fechaActualizacion) {
+    constructor(id, foroId, userId, userName, texto, imagenUrl,profileImageUrl, fechaCreacion, fechaActualizacion) {
         this.id = id;
         this.foroId = foroId;
         this.userId = userId;
         this.userName = userName;
         this.texto = texto; // Usar 'texto' para coincidir con el controlador
         this.imagenUrl = imagenUrl;
+        this.profileImageUrl =profileImageUrl
         this.fechaCreacion = fechaCreacion || new Date();
         this.fechaActualizacion = fechaActualizacion || new Date();
     }
@@ -18,6 +19,7 @@ class ComentarioForoSchema {
             userName: this.userName,
             texto: this.texto,
             imagenUrl: this.imagenUrl,
+            profileImageUrl: this.profileImageUrl,
             fechaCreacion: this.fechaCreacion instanceof Date ? this.fechaCreacion.toISOString() : this.fechaCreacion,
             fechaActualizacion: this.fechaActualizacion instanceof Date ? this.fechaActualizacion.toISOString() : this.fechaActualizacion,
         };

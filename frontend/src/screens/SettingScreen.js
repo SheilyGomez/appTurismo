@@ -5,14 +5,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useContext, useEffect, useState } from 'react';
 import { ThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-//import { UserContext } from '../context/UserContext';
+import { useAuth } from '../auth/AuthContext';
 
 const SettingsScreen = () => {
   const { darkMode, toggleDarkMode, colors } = useContext(ThemeContext);
-
+  const styles = createStyles(colors);
   const [user, setUser] = useState('');
   const navigation = useNavigation();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const { logout } = useAuth();
 
     useEffect(()=>{
       const loadUser = async()=>{
@@ -25,31 +25,72 @@ const SettingsScreen = () => {
     },[]);
 
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('token');
-      setUser(null);
-      navigation.replace('Login');
-    } catch (error) {
-      console.error("Error al cerrar sesión", error);
-    }
-  };
-
-  const handlePhoneCall = () => {
-    // número de teléfono simulado 
-    const phoneNumber = '123-456-7890';
-    Linking.openURL(`tel:${phoneNumber}`);
-  };
-
   const handleHelp = () => {
-    Alert.alert(
-      "Centro de Ayuda",
-      "Próximamente tendremos una sección de preguntas frecuentes. Para asistencia, por favor llámanos."
-    );
+      Alert.alert(
+        "Centro de Ayuda",
+        "Próximamente incorporaremos una sección de preguntas frecuentes. Mientras tanto, si necesitas asistencia, puedes enviarnos un correo electrónico a través de la sección 'Contáctanos'."
+      );
+    };
+    const handleEmailContact = () => {
+    const recipient = 'correoempresa@example.com'; // <--- Correo temporal
+    const subject = 'Soporte Tecnico aplicación móvil'; 
+    const body = 'Hola, necesito ayuda con...'; 
+    
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(body);
+
+    Linking.openURL(`mailto:${recipient}?subject=${encodedSubject}&body=${encodedBody}`);
   };
   
-  const styles = StyleSheet.create({
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Configuración</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>General</Text>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingText}>Tema Oscuro</Text>
+          <Switch
+            value={darkMode}
+            onValueChange={toggleDarkMode}
+            trackColor={{ false: "#767577", true: colors.primary }}
+            thumbColor={"#f4f3f4"}
+          />
+        </View>
+        
+      </View>
+
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Cuenta y Soporte</Text>
+        <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Profile')}>
+          <Text style={styles.settingText}>Perfil</Text>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.settingItem} onPress={handleEmailContact}>
+    <Text style={styles.settingText}>Contactar por Correo</Text>
+    <MaterialCommunityIcons name="email-outline" size={24} color={colors.text} /> 
+  </TouchableOpacity>
+        <TouchableOpacity style={styles.settingItem} onPress={handleHelp}>
+          <Text style={styles.settingText}>Ayuda</Text>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.text} />
+        </TouchableOpacity>
+
+        
+     
+      </View>
+
+      <TouchableOpacity style={styles.buttonDanger} onPress={logout}>
+        <MaterialCommunityIcons name='logout' size={24} color={'#fff'} />
+        <Text style={styles.buttonText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+};
+
+const createStyles = (colors) => StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -92,7 +133,7 @@ const SettingsScreen = () => {
     },
     buttonDanger: {
       flexDirection: 'row',
-      backgroundColor: colors.deletebutton,
+      backgroundColor: colors.cancelarbutton,
       borderRadius: 10,
       height: 50,
       justifyContent: 'center',
@@ -108,58 +149,5 @@ const SettingsScreen = () => {
       fontWeight: 'bold',
     },
   });
-
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>General</Text>
-        <View style={styles.settingItem}>
-          <Text style={styles.settingText}>Tema Oscuro</Text>
-          <Switch
-            value={darkMode}
-            onValueChange={toggleDarkMode}
-            trackColor={{ false: "#767577", true: colors.primary }}
-            thumbColor={"#f4f3f4"}
-          />
-        </View>
-        <View style={styles.settingItem}>
-          <Text style={styles.settingText}>Notificaciones</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={() => setNotificationsEnabled(previousState => !previousState)}
-            trackColor={{ false: "#767577", true: colors.primary }}
-            thumbColor={"#f4f3f4"}
-          />
-        </View>
-      </View>
-
-      {/* Sección de Cuenta y Soporte */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Cuenta y Soporte</Text>
-        <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Profile')}>
-          <Text style={styles.settingText}>Perfil</Text>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem} onPress={handleHelp}>
-          <Text style={styles.settingText}>Ayuda</Text>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem} onPress={handlePhoneCall}>
-          <Text style={styles.settingText}>Llamar al Restaurante</Text>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.buttonDanger} onPress={handleLogout}>
-        <MaterialCommunityIcons name='logout' size={24} color={'#fff'} />
-        <Text style={styles.buttonText}>Cerrar Sesión</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-};
 
 export default SettingsScreen;

@@ -3,14 +3,14 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity, // Usamos TouchableOpacity para botones con estilo personalizado
+  TouchableOpacity, 
   StyleSheet,
   Alert,
-  ImageBackground, // Para la imagen de fondo
-  Platform // Para estilos específicos de plataforma si es necesario
+  ImageBackground,
+  Platform 
 } from 'react-native';
 import { useAuth } from '../../auth/AuthContext';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Asegúrate de instalar esta librería: npm install react-native-vector-icons
+import Icon from 'react-native-vector-icons/FontAwesome'; 
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <ImageBackground
-      source={require('../../../../assets/imagen2.jpeg')} // Asegúrate de tener una imagen en esta ruta
+      source={require('../../../../assets/imagen2.jpeg')} 
       style={styles.background}
     >
       <View style={styles.overlay} /> 
@@ -44,7 +44,7 @@ const LoginScreen = ({ navigation }) => {
           <TextInput
             style={styles.input}
             placeholder="Correo Electrónico"
-            placeholderTextColor="#bbb"
+            placeholderTextColor="#ffffffff"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -57,7 +57,7 @@ const LoginScreen = ({ navigation }) => {
           <TextInput
             style={styles.input}
             placeholder="Contraseña"
-            placeholderTextColor="#bbb"
+            placeholderTextColor="#ffffffff"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)', // Capa oscura semitransparente
+    backgroundColor: 'rgba(0, 0, 0, 0.52)', // Capa oscura semitransparente
   },
   container: {
     flex: 1,
@@ -119,11 +119,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 10,
     textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'Roboto-Bold', // Ejemplo de fuente
+    fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'Roboto-Bold', 
   },
   subtitle: {
     fontSize: 18,
-    color: '#E0E0E0',
+    color: '#ffffffff',
     marginBottom: 40,
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'Avenir-Light' : 'Roboto-Light',
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.29)', // Fondo semitransparente para el input
+    backgroundColor: 'rgba(168, 168, 168, 0.7)',
     borderRadius: 30,
     marginBottom: 20,
     paddingHorizontal: 15,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     marginRight: 10,
-    color: '#E0E0E0', // Color del icono
+    color: '#ffffffff', 
   },
   input: {
     flex: 1,
@@ -155,14 +155,14 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     marginBottom: 20,
-    elevation: 3, // Sombra para Android
-    shadowColor: '#000', // Sombra para iOS
+    elevation: 3, 
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   loginButton: {
-    backgroundColor: '#FF6F61', // Color naranja principal (similar a los botones de la segunda imagen)
+    backgroundColor: '#FF6F61', 
   },
   buttonText: {
     color: '#FFFFFF',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'Roboto-Bold',
   },
   orText: {
-    color: '#E0E0E0',
+    color: '#ffffffff',
     fontSize: 16,
     marginBottom: 20,
     fontFamily: Platform.OS === 'ios' ? 'Avenir-Medium' : 'Roboto-Medium',
@@ -195,25 +195,25 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
   },
   googleButton: {
-    backgroundColor: '#DB4437', // Rojo Google
+    backgroundColor: '#DB4437', 
   },
   facebookButton: {
-    backgroundColor: '#4267B2', // Azul Facebook
+    backgroundColor: '#4267B2', 
   },
   appleButton: {
-    backgroundColor: '#000000', // Negro Apple
+    backgroundColor: '#000000',
   },
   signupPrompt: {
     flexDirection: 'row',
     marginTop: 10,
   },
   signupText: {
-    color: '#E0E0E0',
+    color: '#ffffffff',
     fontSize: 16,
     fontFamily: Platform.OS === 'ios' ? 'Avenir-Medium' : 'Roboto-Medium',
   },
   signupLink: {
-    color: '#FF6F61', // Color del enlace (naranja principal)
+    color: '#FF6F61', 
     fontSize: 16,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'Roboto-Bold',

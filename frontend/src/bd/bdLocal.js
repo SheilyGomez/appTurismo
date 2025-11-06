@@ -1,4 +1,3 @@
-// frontend/src/bd/bdLocal.js
 import * as SQLite from 'expo-sqlite';
 
 const db = SQLite.openDatabaseSync('appturismo.db');
@@ -19,15 +18,14 @@ export const initDatabase = () => {
                 rol TEXT,
                 fechaDeNacimiento TEXT,
                 fechaCreacion TEXT,
+                profileImageUrl TEXT,  -- NUEVO
                 syncStatus TEXT NOT NULL DEFAULT 'SYNCHRONIZED',
                 lastModified TEXT
             );
         `);
 
         console.log('Tabla usuarios creada/verificada con éxito.');
-        // añadir más tablas aquí con db.execSync
-        // db.execSync(`CREATE TABLE IF NOT EXISTS otra_tabla (...)`);
-
+    
     } catch (error) {
         console.error('Error al inicializar la base de datos:', error);
     }

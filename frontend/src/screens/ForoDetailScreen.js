@@ -2,9 +2,12 @@ import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TextInput, Button, KeyboardAvoidingView, Platform, RefreshControl, Image, TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { ThemeContext } from '../context/ThemeContext';
+import { useProfile } from '../context/PerfileContext'; 
 import { getForumDetailsAPI, addCommentAPI } from '../api/apiForo';
 import { useAuth } from '../auth/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToCloudinary } from '../api/cloudinaryConfig';
+import { MaterialIcons, Feather } from '@expo/vector-icons'; 
 
 const ForoDetailScreen = () => {
     const route = useRoute();
@@ -13,18 +16,26 @@ const ForoDetailScreen = () => {
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
-    const [selectedCommentImage, setSelectedCommentImage] = useState(null); // Objeto asset de la imagen del comentario
+    const [selectedCommentImage, setSelectedCommentImage] = useState(null);
     const [addingComment, setAddingComment] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const { colors } = useContext(ThemeContext);
     const { user } = useAuth();
+    const { profile, loading: profileLoading } = useProfile();
+    const styles = createStyles(colors);
+    const isCommentButtonDisabled = addingComment || (!commentText.trim() && !selectedCommentImage) || profileLoading || !profile;
 
     const fetchForumDetails = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getForumDetailsAPI(forumId);
             setForum(data.foro);
-            setComments(data.comentarios);
+            const sortedComments = data.comentarios.sort((a, b) => {
+                const dateA = a.fechaCreacion._seconds ? new Date(a.fechaCreacion._seconds * 1000) : new Date(a.fechaCreacion);
+                const dateB = b.fechaCreacion._seconds ? new Date(b.fechaCreacion._seconds * 1000) : new Date(b.fechaCreacion);
+                return dateA - dateB;
+            });
+            setComments(sortedComments);
         } catch (error) {
             Alert.alert('Error', 'No se pudieron cargar los detalles del foro.');
             console.error('Error fetching forum details:', error);
@@ -51,11 +62,10 @@ const ForoDetailScreen = () => {
         }
 
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, // Usar MediaTypeOptions, MediaType no funciona
             allowsEditing: true,
             aspect: [4, 3],
             quality: 0.7,
-            // Ya NO necesitamos base64: true
         });
 
         if (!result.canceled) {
@@ -63,47 +73,51 @@ const ForoDetailScreen = () => {
         }
     };
 
+    const clearSelectedCommentImage = () => {
+        setSelectedCommentImage(null);
+    };
+
     const handleAddComment = async () => {
         if (!commentText.trim() && !selectedCommentImage) {
             Alert.alert('Atención', 'El comentario no puede estar vacío y debe tener texto o una imagen.');
             return;
         }
-        if (!user || !user.uid || !user.displayName) {
-            Alert.alert('Error', 'Debes iniciar sesión para comentar y tu perfil debe tener un nombre de usuario.');
+        if (!user || !user.uid) {
+            Alert.alert('Error', 'Debes iniciar sesión para comentar.');
             return;
         }
 
         setAddingComment(true);
         try {
-            // 1. Crear un objeto FormData
-            const formData = new FormData();
-
-            // 2. Adjuntar los campos de texto
-            formData.append('foroId', forumId);
-            formData.append('userId', user.uid);
-            formData.append('userName', user.displayName || user.email);
-            formData.append('texto', commentText.trim());
-
-            // 3. Adjuntar la imagen si existe
+            let commentImageUrl = null;
             if (selectedCommentImage) {
-                // El campo 'imagen' debe coincidir con el nombre esperado en Multer (upload.single('imagen'))
-                formData.append('imagen', {
-                    uri: selectedCommentImage.uri,
-                    name: selectedCommentImage.fileName || `comment_upload_${Date.now()}.jpg`,
-                    type: selectedCommentImage.mimeType || 'image/jpeg',
-                });
+                console.log('[ForoDetailScreen] Subiendo imagen de comentario a Cloudinary...');
+                commentImageUrl = await uploadImageToCloudinary(selectedCommentImage.uri, 'comentarios');
+                console.log('[ForoDetailScreen] Imagen de comentario Cloudinary URL:', commentImageUrl);
             }
-            
-            // 4. Enviar el FormData a la API
-            const response = await addCommentAPI(formData);
-            
+
+            const commentData = {
+                foroId: forumId,
+                userId: user.uid,
+                userName: user.displayName || user.email,
+                texto: commentText.trim(),
+                imagenUrl: commentImageUrl,
+                profileImageUrl: profile.profileImageUrl,
+            };
+
+            const response = await addCommentAPI(commentData);
+
             if (response && response.comentario) {
-                setComments((prevComments) => [...prevComments, response.comentario]);
+                setComments((prevComments) => [...prevComments, {
+                    ...response.comentario,
+                    fechaCreacion: response.comentario.fechaCreacion ? new Date(response.comentario.fechaCreacion) : new Date(),
+                }]);
             } else {
                 Alert.alert('Error', 'Respuesta de comentario inesperada.');
             }
             setCommentText('');
-            setSelectedCommentImage(null); // Limpiar la imagen seleccionada
+            setSelectedCommentImage(null);
+
         } catch (error) {
             Alert.alert('Error', 'No se pudo agregar el comentario');
             console.error('Error adding comment:', error.response ? error.response.data : error.message);
@@ -112,11 +126,12 @@ const ForoDetailScreen = () => {
         }
     };
 
-    if (loading && !refreshing) {
+    // Añadir profileLoading a la condición de carga principal
+    if (loading && !refreshing) { // Si el perfil está cargando, también mostrar indicador
         return (
             <View style={[styles.centered, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ color: colors.text }}>Cargando detalles del foro...</Text>
+                <Text style={{ color: colors.text }}>Cargando detalles del foro y perfil...</Text>
             </View>
         );
     }
@@ -155,55 +170,89 @@ const ForoDetailScreen = () => {
                     {comments.length === 0 ? (
                         <Text style={{ color: colors.text }}>Sé el primero en comentar.</Text>
                     ) : (
+
                         comments.map((comment) => (
                             <View key={comment.id} style={[styles.commentItem, { backgroundColor: colors.sub_background }]}>
-                                <Text style={[styles.commentAuthor, { color: colors.text }]}>{comment.userName}</Text>
+
+                                <View style={styles.commentAuthorContainer}>
+                                    <Image
+                                        source={
+                                            comment.profileImageUrl
+                                                ? { uri: comment.profileImageUrl }
+                                                : require('../../../assets/User.jpeg')
+                                        }
+                                        style={styles.foroProfileImage}
+                                    />
+                                    <Text style={[styles.commentAuthor, { color: colors.text }]}>{comment.userName}</Text>
+                                </View>
                                 <Text style={{ color: colors.text }}>{comment.texto}</Text>
                                 {comment.imagenUrl && (
                                     <Image source={{ uri: comment.imagenUrl }} style={styles.commentImage} />
                                 )}
                                 <Text style={[styles.commentDate, { color: colors.text }]}>
-                                    {new Date(comment.fechaCreacion._seconds * 1000).toLocaleDateString()}
+                                    {comment.fechaCreacion._seconds ?
+                                        new Date(comment.fechaCreacion._seconds * 1000).toLocaleDateString() :
+                                        new Date(comment.fechaCreacion).toLocaleDateString()
+                                    }
                                 </Text>
                             </View>
                         ))
                     )}
                 </View>
             </ScrollView>
+
             {user && (
-                <View style={[styles.commentInputContainer, { backgroundColor: colors.sub_background, borderTopColor: colors.border }]}>
+                <View style={[styles.commentInputContainer, { backgroundColor: colors.sub_background, borderTopColor: colors.inputBorder }]}>
                     <TouchableOpacity onPress={pickCommentImage} style={styles.imagePickerCommentButton}>
                         {selectedCommentImage ? (
-                            <Image source={{ uri: selectedCommentImage.uri }} style={styles.commentImagePreview} />
+                            <>
+                                <Image source={{ uri: selectedCommentImage.uri }} style={styles.commentImagePreview} />
+                                <TouchableOpacity onPress={clearSelectedCommentImage} style={styles.clearImageButton}>
+                                    <MaterialIcons name="close" size={16} color="white" />
+                                </TouchableOpacity>
+                            </>
                         ) : (
-                            // Puedes usar un icono o una imagen de placeholder cuando no hay imagen seleccionada
-                            <Image source={require('../../../assets/imagen2.jpeg')} style={styles.commentImagePreview} /> 
+                            <TouchableOpacity onPress={pickCommentImage} style={styles.cameraButton}>
+                                <MaterialIcons name="image" size={24} color="white" />
+                            </TouchableOpacity>
+
+
                         )}
                     </TouchableOpacity>
                     <TextInput
-                        style={[styles.commentTextInput, { backgroundColor: colors.inputBackground, color: colors.text, borderColor: colors.border }]}
+                        style={[styles.commentTextInput, { backgroundColor: colors.inputBackground, color: colors.text }]}
                         placeholder="Escribe un comentario..."
                         placeholderTextColor={colors.textSecondary}
                         value={commentText}
                         onChangeText={setCommentText}
                         multiline
                     />
-                    <Button
-                        title={addingComment ? "Enviando..." : "Comentar"}
+
+
+                    <TouchableOpacity
                         onPress={handleAddComment}
-                        disabled={addingComment || (!commentText.trim() && !selectedCommentImage)}
-                        color={colors.primary}
-                    />
+                        style={[styles.sendButton, { backgroundColor: colors.primary }]}
+                        disabled={isCommentButtonDisabled}
+                    >
+                        {addingComment ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Feather name="send" size={20} color="#fff" />
+                        )}
+                    </TouchableOpacity>
+
+
                 </View>
             )}
         </KeyboardAvoidingView>
     );
 };
 
-// ... (tus estilos permanecen igual)
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
+        paddingTop: 50,
         flex: 1,
+        paddingBottom: 70, // Espacio para el input de comentario
     },
     scrollViewContent: {
         padding: 15,
@@ -217,7 +266,7 @@ const styles = StyleSheet.create({
     forumTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 5,
+        marginBottom: 10,
     },
     forumMeta: {
         fontSize: 14,
@@ -252,9 +301,13 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginBottom: 10,
     },
+    commentAuthorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
     commentAuthor: {
         fontWeight: 'bold',
-        marginBottom: 3,
     },
     commentDate: {
         fontSize: 12,
@@ -270,15 +323,24 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     commentInputContainer: {
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
+        backgroundColor: '#fff',
+        borderRadius: 40,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
-        backgroundColor: '#fff',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5,
     },
     imagePickerCommentButton: {
         marginRight: 10,
+        position: 'relative',
     },
     commentImagePreview: {
         width: 40,
@@ -287,6 +349,17 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ddd',
         resizeMode: 'cover',
+    },
+    clearImageButton: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     commentTextInput: {
         flex: 1,
@@ -299,6 +372,31 @@ const styles = StyleSheet.create({
         minHeight: 40,
         maxHeight: 120,
     },
+    foroProfileImage: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginRight: 8,
+        backgroundColor: '#ccc',
+    },
+    sendButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        //marginLeft: 5, 
+    },
+    cameraButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+    }
+
 });
 
 export default ForoDetailScreen;

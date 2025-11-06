@@ -3,16 +3,16 @@ import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
 import { useProfile } from '../context/PerfileContext';
-import { ThemeContext } from '../context/ThemeContext';  
+import { ThemeContext } from '../context/ThemeContext';
 import { useContext } from 'react';
 
 
 const HomeScreen = ({ navigation }) => {
-  const {colors} = useContext(ThemeContext);
+  const { colors } = useContext(ThemeContext);
   const { logout } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useProfile();
   const styles = makeStyles(colors);
-  
+
 
   if (profileLoading) {
     return (
@@ -39,11 +39,9 @@ const HomeScreen = ({ navigation }) => {
       <Text style={styles.detailText}>Email: {profile?.email || 'N/A'}</Text>
       <Text style={styles.detailText}>País: {profile?.pais || 'N/A'}</Text>
       <Text style={styles.detailText}>Preferencias: {Array.isArray(profile?.preferenciasViaje) ? profile.preferenciasViaje.join(', ') : profile?.preferenciasViaje || 'N/A'}</Text>
-    
 
-      <Button title="Ver mi Perfil" onPress={() => navigation.navigate('Profile')} />
+
       <Button title="configuracion" onPress={() => navigation.navigate('Settings')} />
-      <Button title="Ver Foros" onPress={() => navigation.navigate('ForoList')} />
       <Button title="Cerrar Sesión" onPress={logout} color="red" />
     </View>
   );
@@ -81,7 +79,8 @@ function makeStyles(colors) {
       marginBottom: 20,
       textAlign: 'center',
     }
-  })};
+  })
+};
 
 
 export default HomeScreen;

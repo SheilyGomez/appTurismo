@@ -5,7 +5,6 @@ const admin = require('firebase-admin');
 
 
 // Carga las credenciales de tu cuenta de servicio de Firebase
-//const serviceAccount = require('./serviceAccountKey.json');
 const serviceAccount = require('./config/serviceAccountKey.json');
 
 // Inicializa la aplicación de Firebase Admin
@@ -39,11 +38,7 @@ const lugaresRoutes = require('./routes/lugarTuristico');
 app.use('/api/lugares', lugaresRoutes);
 
 // Puerto para el backend
-// Puerto para el backend
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => { // <--- ASIGNA EL RESULTADO A LA VARIABLE 'server'
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
-
-// Aumenta el timeout para el servidor (ej. 120 segundos = 120000 ms)
-server.setTimeout(120000); // Puedes ajustar este valor si es necesario

@@ -2,18 +2,24 @@ import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ThemeContext } from '../context/ThemeContext';
+import { useProfile } from '../context/PerfileContext';
 import { createForumAPI } from '../api/apiForo';
 import { useAuth } from '../auth/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToCloudinary } from '../api/cloudinaryConfig';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 const CrearForoScreen = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [selectedImage, setSelectedImage] = useState(null); // Objeto asset de la imagen
+    const [selectedImage, setSelectedImage] = useState(null);
     const [creating, setCreating] = useState(false);
     const navigation = useNavigation();
     const { colors } = useContext(ThemeContext);
+    const styles = createStyles(colors);
+
     const { user } = useAuth();
+    const { profile } = useProfile();
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -26,12 +32,11 @@ const CrearForoScreen = () => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 0.7, // Reduce la calidad
-            // Ya NO necesitamos base64: true porque Multer manejará el archivo binario directamente
+            quality: 0.7,
         });
 
         if (!result.canceled) {
-            setSelectedImage(result.assets[0]); // Guarda el objeto asset de la imagen
+            setSelectedImage(result.assets[0]);
         }
     };
 
@@ -41,33 +46,27 @@ const CrearForoScreen = () => {
             return;
         }
         if (!user || !user.uid || !user.displayName) {
-            Alert.alert('Error', 'Debes iniciar sesión para crear un foro y tu perfil debe tener un nombre de usuario.');
+            Alert.alert('Error', 'Debes iniciar sesión para crear un foro.');
             return;
         }
 
         setCreating(true);
         try {
-            // 1. Crear un objeto FormData
-            const formData = new FormData();
-
-            // 2. Adjuntar los campos de texto
-            formData.append('titulo', title);
-            formData.append('descripcion', description);
-            // userId y userName los obtendrá el backend de req.user (del token de autenticación)
-
-            // 3. Adjuntar la imagen si existe
+            let imageUrl = null;
             if (selectedImage) {
-                // El campo 'imagen' debe coincidir con el nombre esperado en Multer (upload.single('imagen'))
-                formData.append('imagen', {
-                    uri: selectedImage.uri,
-                    name: selectedImage.fileName || `upload_${Date.now()}.jpg`, // Nombre único para el archivo
-                    type: selectedImage.mimeType || 'image/jpeg', // Tipo MIME del archivo
-                });
+                imageUrl = await uploadImageToCloudinary(selectedImage.uri, 'foros');
             }
-            
-            // 4. Enviar el FormData a la API
-            await createForumAPI(formData);
-            
+
+            const forumData = {
+                titulo: title,
+                descripcion: description,
+                imagenUrl: imageUrl,
+                userId: user.uid,
+                userName: user.displayName,
+                profileImg: profile.profileImageUrl,
+            };
+
+            await createForumAPI(forumData);
             Alert.alert('Éxito', 'Tema del foro creado exitosamente.');
             navigation.goBack();
         } catch (error) {
@@ -79,88 +78,141 @@ const CrearForoScreen = () => {
     };
 
     return (
-        <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
-            <Text style={[styles.title, { color: colors.text }]}>Crear Nuevo Tema del Foro</Text>
+        <ScrollView contentContainerStyle={styles.container}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={28} color={colors.text} />
+        </TouchableOpacity>
 
-            <TextInput
-                style={[styles.input, { backgroundColor: colors.sub_background, color: colors.text, borderColor: colors.primary }]}
-                placeholder="Título del Tema"
-                placeholderTextColor={colors.text}
-                value={title}
-                onChangeText={setTitle}
-                editable={!creating}
-            />
-            <TextInput
-                style={[styles.input, styles.multilineInput, { backgroundColor: colors.sub_background, color: colors.text, borderColor: colors.primary }]}
-                placeholder="Descripción del Tema"
-                placeholderTextColor={colors.text}
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={6}
-                editable={!creating}
-            />
 
-            <TouchableOpacity
-                style={[styles.imagePickerButton, { backgroundColor: colors.secondary }]}
-                onPress={pickImage}
-                disabled={creating}
-            >
-                <Text style={{ color: colors.buttonText }}>{selectedImage ? "Cambiar Imagen" : "Seleccionar Imagen (Opcional)"}</Text>
-            </TouchableOpacity>
-            {selectedImage ? (
-                <Image source={{ uri: selectedImage.uri }} style={styles.previewImage} />
-            ) : (
-                <Text style={{ color: colors.text, marginBottom: 10 }}>No hay imagen seleccionada</Text>
-            )}
+            <Text style={styles.header}>Crear Nuevo Foro</Text>
 
-            <Button
-                title={creating ? "Creando..." : "Crear Tema"}
-                onPress={handleCreateForum}
-                disabled={creating || (!title.trim() && !description.trim())} // Deshabilita si no hay título o descripción
-                color={colors.primary}
-            />
+            <View style={styles.card}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Título del tema"
+                    placeholderTextColor="#8E8E93"
+                    value={title}
+                    onChangeText={setTitle}
+                    editable={!creating}
+                />
+                <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Descripción del tema"
+                    placeholderTextColor="#8E8E93"
+                    value={description}
+                    onChangeText={setDescription}
+                    multiline
+                    numberOfLines={5}
+                    editable={!creating}
+                />
+
+                <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage} disabled={creating}>
+                    <Text style={styles.imagePickerText}>
+                        {selectedImage ? 'Cambiar Imagen' : 'Seleccionar Imagen (Opcional)'}
+                    </Text>
+                </TouchableOpacity>
+
+                {selectedImage && <Image source={{ uri: selectedImage.uri }} style={styles.previewImage} />}
+
+                <TouchableOpacity
+                    style={[styles.createButton, creating && { opacity: 0.7 }]}
+                    onPress={handleCreateForum}
+                    disabled={creating}
+                >
+                    {creating ? (
+                        <ActivityIndicator color={colors.text} />
+                    ) : (
+                        <Text style={styles.createButtonText}>Crear Foro</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
         </ScrollView>
     );
 };
 
-// ... (tus estilos permanecen igual)
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
+        paddingTop: 50,
         flexGrow: 1,
+        backgroundColor: colors.background,
         padding: 20,
         alignItems: 'center',
+      
     },
-    title: {
-        fontSize: 24,
+    header: {
+        fontSize: 26,
         fontWeight: 'bold',
-        marginBottom: 20,
+        color: colors.text,
+        marginBottom: 25,
+        textAlign: 'center',
+    },
+    card: {
+        paddingTop: 40,
+        backgroundColor: colors.sub_background,
+        width: '100%',
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 4,
     },
     input: {
-        width: '100%',
+        backgroundColor: colors.inputBackground,
+        borderRadius: 12,
         padding: 12,
-        borderWidth: 1,
-        borderRadius: 8,
-        marginBottom: 15,
         fontSize: 16,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: colors.inputBorder,
+        color: colors.text,
     },
-    multilineInput: {
+    textArea: {
         height: 120,
         textAlignVertical: 'top',
     },
     imagePickerButton: {
+        backgroundColor: colors.primary,
+        borderRadius: 12,
         padding: 12,
-        borderRadius: 8,
         alignItems: 'center',
-        marginBottom: 10,
-        width: '100%',
+        marginBottom: 15,
+    },
+    imagePickerText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '500',
     },
     previewImage: {
         width: '100%',
-        height: 150,
-        borderRadius: 8,
+        height: 180,
+        borderRadius: 12,
         marginBottom: 15,
         resizeMode: 'cover',
+    },
+    createButton: {
+        backgroundColor: colors.buttonCrear,
+        borderRadius: 15,
+        paddingVertical: 14,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    createButtonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+     backButton: {
+        position: 'absolute', 
+        top: 50,             
+        left: 20,            
+        zIndex: 10,          
+        padding: 5,
     },
 });
 

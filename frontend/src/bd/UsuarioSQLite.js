@@ -9,8 +9,8 @@ export const saveUsuarioProfileLocal = (profileData) => {
       `INSERT OR REPLACE INTO usuarios (
         id, firebaseUid, email, nombreUsuario, nombreCompleto, pais,
         preferenciasViaje, intereses, actividadesPreferidas, rol,
-        fechaDeNacimiento,fechaCreacion ,syncStatus, lastModified
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);`,
+        fechaDeNacimiento, fechaCreacion, profileImageUrl, syncStatus, lastModified
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`, 
       [
         id,
         profileData.firebaseUid || profileData.uid,
@@ -24,6 +24,7 @@ export const saveUsuarioProfileLocal = (profileData) => {
         profileData.rol || 'usuario',
         profileData.fechaDeNacimiento || null,
         profileData.fechaCreacion || new Date().toISOString(),
+        profileData.profileImageUrl || null, // Guardar la URL de la imagen de perfil
         profileData.syncStatus || SYNC_STATUS.SYNCHRONIZED,
         new Date().toISOString()
       ]

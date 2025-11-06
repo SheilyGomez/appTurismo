@@ -4,6 +4,8 @@ import LoginScreen from './frontend/src/screens/Auth/LoginScreen';
 import RegisterScreen from './frontend/src/screens/Auth/RegisterScreen';
 import HomeScreen from './frontend/src/screens/HomeScreen';
 import ProfileScreen from './frontend/src/screens/ProfileScreen';
+import PaymentScreen from './frontend/src/screens/PaymentScreen';
+import DestinationDetailScreen from './frontend/src/screens/DestinationDetailScreen';
 
 
 const AuthStack = createStackNavigator();
@@ -23,7 +25,8 @@ const AppMainNavigator = () => {
     <MainAppStack.Navigator initialRouteName="Home">
       <MainAppStack.Screen name="Home" component={HomeScreen} options={{ title: 'Bienvenido' }} />
       <MainAppStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi Perfil' }} />
-      
+      <MainAppStack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pago' }} />
+      <MainAppStack.Screen name="DestinationDetail" component={DestinationDetailScreen} options={{ title: 'Detalles' }} />
     </MainAppStack.Navigator>
   );
 };

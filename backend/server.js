@@ -24,6 +24,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 // Rutas de la API
+
 // Rutas de autenticación
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
@@ -31,6 +32,10 @@ app.use('/api/auth', authRoutes);
 // Rutas de foros
 const foroRoutes = require('./routes/foro');
 app.use('/api/foros', foroRoutes);
+
+// Rutas de destinos
+const destinosRoutes = require('./routes/destinos');
+app.use('/api/destinos', destinosRoutes);
 
 
 // Rutas de lugares turísticos (no funcional)

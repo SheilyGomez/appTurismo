@@ -20,7 +20,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.appTurismo",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAGFZ91jooY4eYMjCJXLz51IUcWO3ydoUk" 
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

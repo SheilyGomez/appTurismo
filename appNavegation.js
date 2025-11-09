@@ -6,7 +6,6 @@ import { useTheme } from '@react-navigation/native'; // Para acceder al tema si 
 import { ThemeContext } from './frontend/src/context/ThemeContext';
 
 
-// --- Importa tus pantallas ---
 // Asegúrate de que estas rutas sean correctas para tu proyecto.
 import LoginScreen from './frontend/src/screens/Auth/LoginScreen';
 import RegisterScreen from './frontend/src/screens/Auth/RegisterScreen';
@@ -17,6 +16,8 @@ import ForoListScreen from './frontend/src/screens/ForoListScreen';
 import ForoDetailScreen from './frontend/src/screens/ForoDetailScreen';
 import CrearForoScreen from './frontend/src/screens/CrearForoScreen'; // Corregido el typo "CrearForocreen" a "CrearForoScreen"
 import EditProfileScreen from './frontend/src/screens/EditProfileScreen';
+import MapScreen from './frontend/src/screens/MapScreen';
+import DestinoDetailScreen from './frontend/src/screens/DestinoDetailScreen';
 //EditProfileScreen
 
 // --- Instancias de Navigators ---
@@ -26,6 +27,7 @@ const HomeStack = createStackNavigator();    // Stack para la pestaña de Inicio
 const ForoStack = createStackNavigator();    // Stack para la pestaña de Foros
 const ProfileStack = createStackNavigator(); // Stack para la pestaña de Perfil
 const Tab = createBottomTabNavigator();      // Instancia del Bottom Tab Navigator
+const MapStack = createStackNavigator();
 
 // --- 1. Navegador de Autenticación (AuthNavigator) ---
 // Pantallas accesibles solo antes de iniciar sesión
@@ -85,6 +87,16 @@ const SettingsStackNavigator = () => {
   );
 };
 
+//Componente del Stack Navigator para el Mapa ---
+const MapStackNavigator = () => {
+    return (
+        <MapStack.Navigator screenOptions={{ headerShown: false }}>
+            <MapStack.Screen name="MapScreen" component={MapScreen} />
+            <MapStack.Screen name="DestinoDetail" component={DestinoDetailScreen} />
+        </MapStack.Navigator>
+    );
+};
+
 // --- 3. Bottom Tab Navigator (AppTabNavigator) ---
 // Contiene las pestañas principales de la aplicación.
 const AppTabNavigator = () => {
@@ -102,6 +114,8 @@ const AppTabNavigator = () => {
 
           if (route.name === 'InicioTab') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'MapaTab') {
+              iconName = focused ? 'map' : 'map-outline';
           } else if (route.name === 'ForosTab') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'PerfilTab') {
@@ -134,6 +148,11 @@ const AppTabNavigator = () => {
         name="InicioTab"
         component={HomeStackNavigator} // Se usa el Stack Navigator para Inicio
         options={{ title: 'Inicio' }}
+      />
+      <Tab.Screen
+          name="MapaTab"
+          component={MapStackNavigator} // Usamos el Stack Navigator del Mapa
+          options={{ title: 'Mapa' }}
       />
       <Tab.Screen
         name="ForosTab"

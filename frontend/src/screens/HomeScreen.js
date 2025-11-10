@@ -38,7 +38,7 @@ const HomeScreen = ({ navigation }) => {
       <Text style={styles.welcomeText}>¡Bienvenido, {profile?.nombreUsuario || profile?.nombreCompleto || profile?.email || 'usuario'}!</Text>
       <Text style={styles.detailText}>Email: {profile?.email || 'N/A'}</Text>
       <Text style={styles.detailText}>País: {profile?.pais || 'N/A'}</Text>
-      <Text style={styles.detailText}>Preferencias: {Array.isArray(profile?.preferenciasViaje) ? profile.preferenciasViaje.join(', ') : profile?.preferenciasViaje || 'N/A'}</Text>
+      <Text style={styles.detailText}>Categoria: {Array.isArray(profile?.CategoriaViaje) ? profile.CategoriaViaje.join(', ') : profile?.CategoriaViaje || 'N/A'}</Text>
 
 
       <Button title="configuracion" onPress={() => navigation.navigate('Settings')} />

@@ -4,8 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 //const API_BASE_URL = Platform.OS === 'android' ? 'http://192.168.1.19:5000' : 'http://localhost:5000';
-//const API_BASE_URL = Platform.OS === 'android' ? 'http://192.168.1.20:5000' : 'http://localhost:5000';
-const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+const API_BASE_URL = Platform.OS === 'android' ? 'http://192.168.1.20:5000' : 'http://localhost:5000';
+//const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -23,7 +23,7 @@ client.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    //console.log('Axios Request Config:', config);
+    console.log('Axios Request Config:', config);
     return config;
   },
   (error) => {

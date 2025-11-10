@@ -1,15 +1,15 @@
 // backend/models/Usuario.js
 
 class UsuarioSchema {
-  constructor(uid, email, nombreUsuario, nombreCompleto, pais, preferenciasViaje, intereses, actividadesPreferidas, fechaDeNacimiento, profileImageUrl = null, backgroundImageUrl = null) {
+  constructor(uid, email, nombreUsuario, nombreCompleto, pais, CategoriaViaje, tipoViaje, actividadesCategoria, fechaDeNacimiento, profileImageUrl = null, backgroundImageUrl = null) {
     this.uid = uid;
     this.email = email;
     this.nombreUsuario = nombreUsuario;
     this.nombreCompleto = nombreCompleto;
     this.pais = pais;
-    this.preferenciasViaje = preferenciasViaje;
-    this.intereses = intereses;
-    this.actividadesPreferidas = actividadesPreferidas;
+    this.CategoriaViaje = CategoriaViaje;
+    this.tipoViaje = tipoViaje;
+    this.actividadesCategoria = actividadesCategoria;
     this.fechaDeNacimiento = new Date(fechaDeNacimiento);
     this.rol = 'usuario';
     this.fechaCreacion = new Date();
@@ -23,9 +23,9 @@ class UsuarioSchema {
       nombreUsuario: this.nombreUsuario,
       nombreCompleto: this.nombreCompleto,
       pais: this.pais,
-      preferenciasViaje: this.preferenciasViaje,
-      intereses: this.intereses,
-      actividadesPreferidas: this.actividadesPreferidas,
+      CategoriaViaje: this.CategoriaViaje,
+      tipoViaje: this.tipoViaje,
+      actividadesCategoria: this.actividadesCategoria,
       fechaDeNacimiento: this.fechaDeNacimiento ? this.fechaDeNacimiento.toISOString().split('T')[0] : null,
       rol: this.rol,
       fechaCreacion: this.fechaCreacion ? this.fechaCreacion.toISOString() : null,

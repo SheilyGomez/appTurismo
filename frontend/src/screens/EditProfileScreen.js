@@ -1,16 +1,16 @@
 import React, { useState, useContext, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Image, TouchableOpacity, TextInput,
-  Alert, ScrollView, ActivityIndicator, Switch
+  Alert, ScrollView, ActivityIndicator, Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../context/PerfileContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { uploadImageToCloudinary } from '../api/cloudinaryConfig';
-import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 import DropDownPicker from 'react-native-dropdown-picker';
-
+import { db } from '../auth/firebaseConfig'; // Asegúrate de que esta ruta sea correcta
+import { collection, getDocs } from 'firebase/firestore';
 
 const EditProfileScreen = ({ navigation }) => {
   const { profile, loading: profileLoading, updateProfileData } = useProfile();
@@ -22,62 +22,125 @@ const EditProfileScreen = ({ navigation }) => {
   const [profileImage, setProfileImage] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Para País (usando DropDownPicker con una única opción)
+  // Para País (usando DropDownPicker con una única opción) - Podrías hacerlo dinámico también si lo necesitas
   const [openPais, setOpenPais] = useState(false);
   const [pais, setPais] = useState('El Salvador'); // Valor predeterminado y único
   const [itemsPais, setItemsPais] = useState([
     { label: 'El Salvador', value: 'El Salvador', icon: () => <Text style={{ marginRight: 5 }}>🇸🇻</Text> },
   ]);
 
-  // Para DropDownPicker de Preferencias de Viaje
-  const [openPreferencias, setOpenPreferencias] = useState(false);
-  const [preferenciasViaje, setPreferenciasViaje] = useState([]); // Debe ser un array
-  const [itemsPreferencias, setItemsPreferencias] = useState([
-    { label: 'Aventura', value: 'aventura' },
-    { label: 'Cultura', value: 'cultura' },
-    { label: 'Relax', value: 'relax' },
-    { label: 'Gastronomía', value: 'gastronomia' },
-    { label: 'Naturaleza', value: 'naturaleza' },
-    { label: 'Deportes', value: 'deportes' },
-  ]);
+  // Para DropDownPicker de Categoria de Viaje
+  const [openCategoria, setOpenCategoria] = useState(false);
+  const [CategoriaViaje, setCategoriaViaje] = useState([]);
+  const [itemsCategoria, setItemsCategoria] = useState([]); // Ahora será dinámico
+  const [loadingCategoria, setLoadingCategoria] = useState(true);
 
-  // Para DropDownPicker de Intereses
-  const [openIntereses, setOpenIntereses] = useState(false);
-  const [intereses, setIntereses] = useState([]); // Debe ser un array
-  const [itemsIntereses, setItemsIntereses] = useState([
-    { label: 'Playa', value: 'playa' },
-    { label: 'Montaña', value: 'montaña' },
-    { label: 'Museos', value: 'museos' },
-    { label: 'Vida Nocturna', value: 'vida_nocturna' },
-    { label: 'Compras', value: 'compras' },
-    { label: 'Historia', value: 'historia' },
-  ]);
+  // Para DropDownPicker de tipoViaje
+  const [opentipoViaje, setOpentipoViaje] = useState(false);
+  const [tipoViaje, settipoViaje] = useState([]);
+  const [itemstipoViaje, setItemstipoViaje] = useState([]); // Ahora será dinámico
+  const [loadingtipoViaje, setLoadingtipoViaje] = useState(true);
 
-  // Para DropDownPicker de Actividades Preferidas
-  const [openActividades, setOpenActividades] = useState(false);
-  const [actividadesPreferidas, setActividadesPreferidas] = useState([]); // Debe ser un array
-  const [itemsActividades, setItemsActividades] = useState([
-    { label: 'Senderismo', value: 'senderismo' },
-    { label: 'Buceo', value: 'buceo' },
-    { label: 'Esquí', value: 'esqui' },
-    { label: 'Ciclismo', value: 'ciclismo' },
-    { label: 'Fotografía', value: 'fotografia' },
-    { label: 'Surf', value: 'surf' },
-  ]);
+  // Para DropDownPicker de actividades Preferidas
+  const [openactividades, setOpenactividades] = useState(false);
+  const [actividadesCategoria, setactividadesCategoria] = useState([]);
+  const [itemsactividades, setItemsactividades] = useState([]); // Ahora será dinámico
+  const [loadingactividades, setLoadingactividades] = useState(true);
+
+  // Efecto para cargar los datos del perfil y los datos dinámicos de Firestore
+  useEffect(() => {
+    const fetchFirestoreData = async () => {
+      // Cargar Categoria de Viaje (categoriaViaje)
+      setLoadingCategoria(true);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'categoriaViaje'));
+        const data = querySnapshot.docs.map(doc => ({
+          label: doc.data().nombre,
+          value: doc.data().nombre,
+        }));
+        setItemsCategoria(data);
+      } catch (error) {
+        console.error("Error fetching Categoria de viaje:", error);
+        Alert.alert("Error", "No se pudieron cargar las Categorías de viaje.");
+      } finally {
+        setLoadingCategoria(false);
+      }
+
+      // Cargar tipoViaje (tipoDeViaje)
+      setLoadingtipoViaje(true);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'tipoViaje'));
+        const data = querySnapshot.docs.map(doc => ({
+          label: doc.data().nombre,
+          value: doc.data().nombre,
+        }));
+        setItemstipoViaje(data);
+      } catch (error) {
+        console.error("Error fetching tipoViaje:", error);
+        Alert.alert("Error", "No se pudieron cargar los Tipos de viaje.");
+      } finally {
+        setLoadingtipoViaje(false);
+      }
+
+      // Cargar actividades Preferidas (categoriaactividadesd)
+      setLoadingactividades(true);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'categoriaActividades'));
+        const data = querySnapshot.docs.map(doc => ({
+          label: doc.data().nombre,
+          value: doc.data().nombre,
+        }));
+        setItemsactividades(data);
+      } catch (error) {
+        console.error("Error fetching actividades preferidas:", error);
+        Alert.alert("Error", "No se pudieron cargar las actividades preferidas.");
+      } finally {
+        setLoadingactividades(false);
+      }
+    };
+
+    fetchFirestoreData();
+  }, []); // Se ejecuta solo una vez al montar para cargar los datos dinámicos
 
   useEffect(() => {
     if (profile) {
       setNombreCompleto(profile.nombreCompleto || '');
       setNombreUsuario(profile.nombreUsuario || '');
       setPais(profile.pais || 'El Salvador');
-      setPreferenciasViaje(Array.isArray(profile.preferenciasViaje) ? profile.preferenciasViaje : []);
-      setIntereses(Array.isArray(profile.intereses) ? profile.intereses : []);
-      setActividadesPreferidas(Array.isArray(profile.actividadesPreferidas) ? profile.actividadesPreferidas : []);
-
+      // Asegúrate de que los valores del perfil sean arrays antes de setearlos
+      setCategoriaViaje(Array.isArray(profile.CategoriaViaje) ? profile.CategoriaViaje : []);
+      settipoViaje(Array.isArray(profile.tipoViaje) ? profile.tipoViaje : []);
+      setactividadesCategoria(Array.isArray(profile.actividadesCategoria) ? profile.actividadesCategoria : []);
       setProfileImage(profile.profileImageUrl || null);
     }
+  }, [profile]); // Se ejecuta cuando el perfil cambia
 
-  }, [profile]);
+  // Asegura que solo un DropDownPicker esté abierto a la vez
+  useEffect(() => {
+    setOpenCategoria(false);
+    setOpentipoViaje(false);
+    setOpenactividades(false);
+  }, [openPais]);
+  // Puedes añadir más `useEffect` para controlar la apertura de los otros DropDownPickers si lo necesitas.
+  // Por ejemplo, si openCategoria es true, cierra los demás, etc.
+  useEffect(() => {
+    setOpenPais(false);
+    setOpentipoViaje(false);
+    setOpenactividades(false);
+  }, [openCategoria]);
+
+  useEffect(() => {
+    setOpenPais(false);
+    setOpenCategoria(false);
+    setOpenactividades(false);
+  }, [opentipoViaje]);
+
+  useEffect(() => {
+    setOpenPais(false);
+    setOpenCategoria(false);
+    setOpentipoViaje(false);
+  }, [openactividades]);
+
 
   const pickProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -110,9 +173,9 @@ const EditProfileScreen = ({ navigation }) => {
         nombreCompleto,
         nombreUsuario,
         pais,
-        preferenciasViaje, // Ya es un array de strings (ej: ['aventura', 'cultura'])
-        intereses,         // Ya es un array de strings (ej: ['playa', 'montaña'])
-        actividadesPreferidas, // Ya es un array de strings (ej: ['senderismo', 'buceo'])
+        CategoriaViaje,
+        tipoViaje,
+        actividadesCategoria,
         profileImageUrl: newProfileImageUrl,
         fechaDeNacimiento: profile.fechaDeNacimiento,
         rol: profile.rol,
@@ -127,18 +190,16 @@ const EditProfileScreen = ({ navigation }) => {
     } finally {
       setIsSaving(false);
     }
-
   };
 
-  if (profileLoading || !profile) {
+  if (profileLoading || loadingCategoria || loadingtipoViaje || loadingactividades || !profile) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color='#037a85ff' />
-        <Text style={{ color: '#E0E0E0', marginTop: 10 }}>Cargando perfil...</Text>
+        <Text style={{ color: colors.text, marginTop: 10 }}>Cargando perfil y preferencias...</Text>
       </View>
     );
   }
-  
 
   return (
     <View style={styles.conteinerBackground}>
@@ -162,20 +223,20 @@ const EditProfileScreen = ({ navigation }) => {
             value={nombreCompleto}
             placeholder="Nombre Completo"
             onChangeText={setNombreCompleto}
-            styles = {styles}
-            colors = {colors}
+            styles={styles}
+            colors={colors}
           />
           <InputField
             icon="at-outline"
             value={nombreUsuario}
             placeholder="Nombre de Usuario"
             onChangeText={setNombreUsuario}
-            styles = {styles}
-            colors = {colors}
+            styles={styles}
+            colors={colors}
           />
 
           <View style={[styles.dropdownContainer, { zIndex: openPais ? 4000 : 100 }]}>
-            <Text style={[styles.dropdownTextStyle, { paddingLeft: 10, color: '#424242' }]}>
+            <Text style={[styles.dropdownTextStyle, { paddingLeft: 10, color: colors.text }]}>
               País:
             </Text>
             <DropDownPicker
@@ -201,109 +262,120 @@ const EditProfileScreen = ({ navigation }) => {
               }}
             />
           </View>
-          <View style={[styles.dropdownContainer, { zIndex: openPreferencias ? 3000 : 1000 }]}>
+          <View style={[styles.dropdownContainer, { zIndex: openCategoria ? 3000 : 1000 }]}>
             <Text style={[styles.dropdownTextStyle, { paddingLeft: 10, color: colors.text }]}>
-              Preferencias de Viaje:
+              Categoría de Viaje:
             </Text>
-            <DropDownPicker
-              open={openPreferencias}
-              value={preferenciasViaje}
-              items={itemsPreferencias}
-              setOpen={setOpenPreferencias}
-              setValue={setPreferenciasViaje}
-              setItems={setItemsPreferencias}
-              placeholder="Preferencias de Viaje"
-              placeholderStyle={styles.placeholderText}
-              style={styles.dropdownStyle}
-              textStyle={styles.dropdownTextStyle}
-              multiple={true}
-              min={0}
-              max={5}
-              mode="BADGE"
-              badgeColors={[colors.secondary,]}
-              badgeDotColors={['white']}
-              badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
-              badgeContainerStyle={{ marginHorizontal: 2 }}
-              dropDownContainerStyle={styles.dropdownMenuContainer}
-              selectedItemContainerStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              tickIconStyle={[colors.secondary,]}
-              itemSeparator={true}
-              itemSeparatorStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              listMode="SCROLLVIEW"
-              scrollViewProps={{
-                nestedScrollEnabled: true,
-              }}
-            />
+            {loadingCategoria ? (
+              <ActivityIndicator size="small" color={colors.secondary} style={{ alignSelf: 'flex-start', marginLeft: 10 }} />
+            ) : (
+              <DropDownPicker
+                open={openCategoria}
+                value={CategoriaViaje}
+                items={itemsCategoria}
+                setOpen={setOpenCategoria}
+                setValue={setCategoriaViaje}
+                setItems={setItemsCategoria}
+                placeholder="Selecciona Categorías de Viaje"
+                placeholderStyle={styles.placeholderText}
+                style={styles.dropdownStyle}
+                textStyle={styles.dropdownTextStyle}
+                multiple={true}
+                min={0}
+                max={5}
+                mode="BADGE"
+                badgeColors={[colors.secondary]}
+                badgeDotColors={['white']}
+                badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
+                badgeContainerStyle={{ marginHorizontal: 2 }}
+                dropDownContainerStyle={styles.dropdownMenuContainer}
+                selectedItemContainerStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                tickIconStyle={{ tintColor: colors.secondary }}
+                itemSeparator={true}
+                itemSeparatorStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                listMode="SCROLLVIEW"
+                scrollViewProps={{
+                  nestedScrollEnabled: true,
+                }}
+              />
+            )}
           </View>
-          <View style={[styles.dropdownContainer, { zIndex: openIntereses ? 2000 : 900 }]}>
+          <View style={[styles.dropdownContainer, { zIndex: opentipoViaje ? 2000 : 900 }]}>
             <Text style={[styles.dropdownTextStyle, { paddingLeft: 10, color: colors.text }]}>
-              Intereses:
+              Tipos de viaje:
             </Text>
-            <DropDownPicker
-              open={openIntereses}
-              value={intereses}
-              items={itemsIntereses}
-              setOpen={setOpenIntereses}
-              setValue={setIntereses}
-              setItems={setItemsIntereses}
-              placeholder="Intereses"
-              placeholderStyle={styles.placeholderText}
-              style={styles.dropdownStyle}
-              textStyle={styles.dropdownTextStyle}
-              multiple={true}
-              min={0}
-              max={5}
-              mode="BADGE"
-              badgeColors={[colors.secondary,]}
-              badgeDotColors={['white']}
-              badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
-              badgeContainerStyle={{ marginHorizontal: 2 }}
-              dropDownContainerStyle={styles.dropdownMenuContainer}
-              selectedItemContainerStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              tickIconStyle={[colors.secondary,]}
-              itemSeparator={true}
-              itemSeparatorStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              listMode="SCROLLVIEW"
-              scrollViewProps={{
-                nestedScrollEnabled: true,
-              }}
-            />
+            {loadingtipoViaje ? (
+              <ActivityIndicator size="small" color={colors.secondary} style={{ alignSelf: 'flex-start', marginLeft: 10 }} />
+            ) : (
+              <DropDownPicker
+                open={opentipoViaje}
+                value={tipoViaje}
+                items={itemstipoViaje}
+                setOpen={setOpentipoViaje}
+                setValue={settipoViaje}
+                setItems={setItemstipoViaje}
+                placeholder="Selecciona Tipos de Viaje"
+                placeholderStyle={styles.placeholderText}
+                style={styles.dropdownStyle}
+                textStyle={styles.dropdownTextStyle}
+                multiple={true}
+                min={0}
+                max={5}
+                mode="BADGE"
+                badgeColors={[colors.secondary]}
+                badgeDotColors={['white']}
+                badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
+                badgeContainerStyle={{ marginHorizontal: 2 }}
+                dropDownContainerStyle={styles.dropdownMenuContainer}
+                selectedItemContainerStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                tickIconStyle={{ tintColor: colors.secondary }}
+                itemSeparator={true}
+                itemSeparatorStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                listMode="SCROLLVIEW"
+                scrollViewProps={{
+                  nestedScrollEnabled: true,
+                }}
+              />
+            )}
           </View>
 
-
-          <View style={[styles.dropdownContainer, { zIndex: openActividades ? 1000 : 800 }]}>
+          <View style={[styles.dropdownContainer, { zIndex: openactividades ? 1000 : 800 }]}>
             <Text style={[styles.dropdownTextStyle, { paddingLeft: 10, color: colors.text }]}>
               Actividades Preferidas:
             </Text>
-            <DropDownPicker
-              open={openActividades}
-              value={actividadesPreferidas}
-              items={itemsActividades}
-              setOpen={setOpenActividades}
-              setValue={setActividadesPreferidas}
-              setItems={setItemsActividades}
-              placeholder="Actividades Preferidas"
-              placeholderStyle={styles.placeholderText}
-              style={styles.dropdownStyle}
-              textStyle={styles.dropdownTextStyle}
-              multiple={true}
-              min={0}
-              max={5}
-              mode="BADGE"
-              badgeColors={[colors.secondary,]}
-              badgeDotColors={['white']}
-              badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
-              badgeContainerStyle={{ marginHorizontal: 2 }}
-              dropDownContainerStyle={styles.dropdownMenuContainer}
-              selectedItemContainerStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              tickIconStyle={[colors.secondary,]}
-              itemSeparator={true}
-              itemSeparatorStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              listMode="SCROLLVIEW"
-              scrollViewProps={{
-                nestedScrollEnabled: true,
-              }}
-            />
+            {loadingactividades ? (
+              <ActivityIndicator size="small" color={colors.secondary} style={{ alignSelf: 'flex-start', marginLeft: 10 }} />
+            ) : (
+              <DropDownPicker
+                open={openactividades}
+                value={actividadesCategoria}
+                items={itemsactividades}
+                setOpen={setOpenactividades}
+                setValue={setactividadesCategoria}
+                setItems={setItemsactividades}
+                placeholder="Selecciona Actividades Preferidas"
+                placeholderStyle={styles.placeholderText}
+                style={styles.dropdownStyle}
+                textStyle={styles.dropdownTextStyle}
+                multiple={true}
+                min={0}
+                max={5}
+                mode="BADGE"
+                badgeColors={[colors.secondary]}
+                badgeDotColors={['white']}
+                badgeTextStyle={{ color: '#ffffffff', fontSize: 14 }}
+                badgeContainerStyle={{ marginHorizontal: 2 }}
+                dropDownContainerStyle={styles.dropdownMenuContainer}
+                selectedItemContainerStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                tickIconStyle={{ tintColor: colors.secondary }}
+                itemSeparator={true}
+                itemSeparatorStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                listMode="SCROLLVIEW"
+                scrollViewProps={{
+                  nestedScrollEnabled: true,
+                }}
+              />
+            )}
           </View>
 
           <TouchableOpacity
@@ -316,10 +388,8 @@ const EditProfileScreen = ({ navigation }) => {
             ) : (
               <Text style={styles.saveButtonText}>Guardar Cambios</Text>
             )}
-
           </TouchableOpacity>
           <TouchableOpacity
-
             style={styles.cancelButton}
             onPress={() => navigation.goBack()}
           >
@@ -328,16 +398,14 @@ const EditProfileScreen = ({ navigation }) => {
         </View>
       </ScrollView>
     </View>
-
   );
-
 };
 
 const InputField = ({ icon, value, placeholder, onChangeText, styles, colors }) => (
-    <View style={styles.inputGroup}>
-    <Ionicons name={icon} size={20} color={colors.text} style={styles.inputIcon} /> 
+  <View style={styles.inputGroup}>
+    <Ionicons name={icon} size={20} color={colors.text} style={styles.inputIcon} />
     <TextInput
-      style={styles.input} // <-- Usa styles.input
+      style={styles.input}
       placeholder={placeholder}
       placeholderTextColor="#9E9E9E"
       value={value}
@@ -350,8 +418,8 @@ const createStyles = (colors) => StyleSheet.create({
   conteinerBackground: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop:40,
-    paddingBottom: 5
+    paddingTop: Platform.OS === 'android' ? 40 : 60,
+    paddingBottom: Platform.OS === 'android' ? 40 : 60,
   },
   container: {
     flexGrow: 1,
@@ -362,7 +430,7 @@ const createStyles = (colors) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundColor, // Fondo blanco para la carga
+    backgroundColor: colors.background,
   },
   header: {
     alignItems: 'center',
@@ -374,10 +442,10 @@ const createStyles = (colors) => StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 4,
-    borderColor: colors.secondary, 
+    borderColor: colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundColor, 
+    backgroundColor: colors.backgroundColor,
     shadowColor: colors.secondary,
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -392,24 +460,24 @@ const createStyles = (colors) => StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: colors.secondary, 
+    backgroundColor: colors.secondary,
     borderRadius: 20,
     padding: 8,
     borderWidth: 2,
     borderColor: '#A0E7E2',
   },
   emailText: {
-    color: colors.text, 
+    color: colors.text,
     fontSize: 16,
     marginTop: 10,
   },
   formCard: {
-    backgroundColor: colors.sub_background, 
+    backgroundColor: colors.sub_background,
     width: '90%',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
-    shadowOpacity: 0.1, 
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 6,
   },
@@ -433,12 +501,6 @@ const createStyles = (colors) => StyleSheet.create({
     color: colors.text,
     paddingVertical: 10,
   },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
   saveButton: {
     marginTop: 25,
     paddingVertical: 14,
@@ -460,38 +522,37 @@ const createStyles = (colors) => StyleSheet.create({
     marginBottom: 15,
   },
   dropdownStyle: {
-    backgroundColor: colors.inputBackground, 
-    borderColor: colors.inputBorder, 
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.inputBorder,
     borderRadius: 12,
     minHeight: 50,
   },
   dropdownTextStyle: {
-    color: colors.text, 
+    color: colors.text,
     fontSize: 15,
   },
   dropdownMenuContainer: {
-    backgroundColor: colors.inputBackground, 
-    borderColor: colors.inputBorder, // Borde gris claro
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.inputBorder,
     borderRadius: 12,
   },
   cancelButton: {
-    marginTop: 15, 
+    marginTop: 15,
     paddingVertical: 14,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.cancelarbutton, 
+    backgroundColor: colors.cancelarbutton,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 3,
   },
   cancelButtonText: {
-    color: '#fff', 
+    color: '#fff',
     fontSize: 17,
     fontWeight: '600',
   },
-  
 });
 
 export default EditProfileScreen;

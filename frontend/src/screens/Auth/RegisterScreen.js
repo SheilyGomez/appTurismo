@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  ImageBackground,
-  Platform,
+  View, Text,  TextInput,  TouchableOpacity,
+  StyleSheet,  Alert,  ScrollView,  ImageBackground,  Platform,
+  ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Importar DateTimePicker
 import { useAuth } from '../../auth/AuthContext';
+import{db} from '../../auth/firebaseConfig'
+import { collection, getDocs } from 'firebase/firestore';
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -27,42 +23,23 @@ const RegisterScreen = ({ navigation }) => {
   const [itemsPais, setItemsPais] = useState([
     { label: 'El Salvador', value: 'El Salvador', icon: () => <Text style={{marginRight: 5}}>🇸🇻</Text> },
   ]);
+  // Para DropDownPicker de Categoria de Viaje
+  const [openCategoria, setOpenCategoria] = useState(false);
+  const [CategoriaViaje, setCategoriaViaje] = useState([]);
+  const [itemsCategoria, setItemsCategoria] = useState([]); // <-- Inicialmente vacío
+  const [loadingCategoria, setLoadingCategoria] = useState(true); // <-- Estado de carga
 
-  // Para DropDownPicker de Preferencias de Viaje
-  const [openPreferencias, setOpenPreferencias] = useState(false);
-  const [preferenciasViaje, setPreferenciasViaje] = useState([]);
-  const [itemsPreferencias, setItemsPreferencias] = useState([
-    { label: 'Aventura', value: 'aventura' },
-    { label: 'Cultura', value: 'cultura' },
-    { label: 'Relax', value: 'relax' },
-    { label: 'Gastronomía', value: 'gastronomia' },
-    { label: 'Naturaleza', value: 'naturaleza' },
-    { label: 'Deportes', value: 'deportes' },
-  ]);
+  // Para DropDownPicker de tipoViaje
+  const [opentipoViaje, setOpentipoViaje] = useState(false);
+  const [tipoViaje, settipoViaje] = useState([]);
+  const [itemstipoViaje, setItemstipoViaje] = useState([]); // <-- Inicialmente vacío
+  const [loadingtipoViaje, setLoadingtipoViaje] = useState(true); // <-- Estado de carga
 
-  // Para DropDownPicker de Intereses
-  const [openIntereses, setOpenIntereses] = useState(false);
-  const [intereses, setIntereses] = useState([]);
-  const [itemsIntereses, setItemsIntereses] = useState([
-    { label: 'Playa', value: 'playa' },
-    { label: 'Montaña', value: 'montaña' },
-    { label: 'Museos', value: 'museos' },
-    { label: 'Vida Nocturna', value: 'vida_nocturna' },
-    { label: 'Compras', value: 'compras' },
-    { label: 'Historia', value: 'historia' },
-  ]);
-
-  // Para DropDownPicker de Actividades Preferidas
-  const [openActividades, setOpenActividades] = useState(false);
-  const [actividadesPreferidas, setActividadesPreferidas] = useState([]);
-  const [itemsActividades, setItemsActividades] = useState([
-    { label: 'Senderismo', value: 'senderismo' },
-    { label: 'Buceo', value: 'buceo' },
-    { label: 'Esquí', value: 'esqui' },
-    { label: 'Ciclismo', value: 'ciclismo' },
-    { label: 'Fotografía', value: 'fotografia' },
-    { label: 'Surf', value: 'surf' },
-  ]);
+  // Para DropDownPicker de actividades Preferidas
+  const [openactividades, setOpenactividades] = useState(false);
+  const [actividadesCategoria, setactividadesCategoria] = useState([]);
+  const [itemsactividades, setItemsactividades] = useState([]); // <-- Inicialmente vacío
+  const [loadingactividades, setLoadingactividades] = useState(true); // <-- Estado de carga
 
   // Para Selector de Fecha de Nacimiento
   const [fechaDeNacimiento, setFechaDeNacimiento] = useState(''); // String YYYY-MM-DD
@@ -72,12 +49,66 @@ const RegisterScreen = ({ navigation }) => {
   const { register, loading } = useAuth();
 
   // Asegura que solo un DropDownPicker esté abierto a la vez
+  
   useEffect(() => {
-    setOpenPreferencias(false);
-    setOpenIntereses(false);
-    setOpenActividades(false);
-  }, [openPais]); // Cierra los demás si se abre el de País (aunque este estará siempre cerrado)
+  const fetchFirestoreData = async () => {
+    // Cargar Categoria de Viaje (categoriaViaje)
+    setLoadingCategoria(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'categoriaViaje'));
+      const data = querySnapshot.docs.map(doc => ({
+        label: doc.data().nombre,
+        value: doc.data().nombre, // Usamos el nombre como valor
+      }));
+      setItemsCategoria(data);
+    } catch (error) {
+      console.error("Error fetching Categoria de viaje:", error);
+      Alert.alert("Error", "No se pudieron cargar las Categoria de viaje.");
+    } finally {
+      setLoadingCategoria(false);
+    }
 
+    // Cargar tipoViaje (tipoDeViaje)
+    setLoadingtipoViaje(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'tipoViaje'));
+      const data = querySnapshot.docs.map(doc => ({
+        label: doc.data().nombre,
+        value: doc.data().nombre, // Usamos el nombre como valor
+      }));
+      setItemstipoViaje(data);
+    } catch (error) {
+      console.error("Error fetching tipoViaje:", error);
+      Alert.alert("Error", "No se pudieron cargar los tipoViaje.");
+    } finally {
+      setLoadingtipoViaje(false);
+    }
+
+    // Cargar actividades Preferidas (categoriaactividadesd)
+    setLoadingactividades(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'categoriaActividades'));
+      const data = querySnapshot.docs.map(doc => ({
+        label: doc.data().nombre,
+        value: doc.data().nombre, // Usamos el nombre como valor
+      }));
+      setItemsactividades(data);
+    } catch (error) {
+      console.error("Error fetching actividades preferidas:", error);
+      Alert.alert("Error", "No se pudieron cargar las actividades preferidas.");
+    } finally {
+      setLoadingactividades(false);
+    }
+  };
+
+  fetchFirestoreData();
+}, []); // El array vacío asegura que se ejecute solo una vez al montar
+  // Asegura que solo un DropDownPicker esté abierto a la vez
+  useEffect(() => {
+    setOpenCategoria(false);
+    setOpentipoViaje(false);
+    setOpenactividades(false);
+  }, [openPais]); // Cierra los demás si se abre el de País (aunque este estará siempre cerrado)
   const handleRegister = async () => {
     // Validaciones básicas de campos
     if (!email || !password || !nombreUsuario || !nombreCompleto || !pais || !fechaDeNacimiento) {
@@ -91,9 +122,9 @@ const RegisterScreen = ({ navigation }) => {
       nombreUsuario,
       nombreCompleto,
       pais,
-      preferenciasViaje,
-      intereses,
-      actividadesPreferidas,
+      CategoriaViaje,
+      tipoViaje,
+      actividadesCategoria,
       fechaDeNacimiento, // Ya está en formato YYYY-MM-DD
     };
 
@@ -208,18 +239,18 @@ const RegisterScreen = ({ navigation }) => {
             />
           </View>
 
-          <View style={[styles.dropdownContainer, { zIndex: openPreferencias ? 3000 : 1000 }]}>
+          <View style={[styles.dropdownContainer, { zIndex: openCategoria ? 3000 : 1000 }]}>
             <Text style={[styles.dropdownTextStyle,{paddingLeft:10}]}> 
-              Preferencias de Viaje: 
+              Categorias de Viaje: 
             </Text>
             <DropDownPicker
-              open={openPreferencias}
-              value={preferenciasViaje}
-              items={itemsPreferencias}
-              setOpen={setOpenPreferencias}
-              setValue={setPreferenciasViaje}
-              setItems={setItemsPreferencias}
-              placeholder="Preferencias de Viaje"
+              open={openCategoria}
+              value={CategoriaViaje}
+              items={itemsCategoria}
+              setOpen={setOpenCategoria}
+              setValue={setCategoriaViaje}
+              setItems={setItemsCategoria}
+              placeholder="Categorias de Viaje"
               placeholderStyle={styles.placeholderText}
               style={styles.dropdownStyle}
               textStyle={styles.dropdownTextStyle}
@@ -242,18 +273,18 @@ const RegisterScreen = ({ navigation }) => {
               }}
             />
           </View>
-          <View style={[styles.dropdownContainer, { zIndex: openIntereses ? 2000 : 900 }]}>
+          <View style={[styles.dropdownContainer, { zIndex: opentipoViaje ? 2000 : 900 }]}>
             <Text style={[styles.dropdownTextStyle,{paddingLeft:10}]}> 
-              Intereses: 
+              Tipos de viaje: 
             </Text>
             <DropDownPicker
-              open={openIntereses}
-              value={intereses}
-              items={itemsIntereses}
-              setOpen={setOpenIntereses}
-              setValue={setIntereses}
-              setItems={setItemsIntereses}
-              placeholder="Intereses"
+              open={opentipoViaje}
+              value={tipoViaje}
+              items={itemstipoViaje}
+              setOpen={setOpentipoViaje}
+              setValue={settipoViaje}
+              setItems={setItemstipoViaje}
+              placeholder="Tipos de viaje"
               placeholderStyle={styles.placeholderText}
               style={styles.dropdownStyle}
               textStyle={styles.dropdownTextStyle}
@@ -278,17 +309,17 @@ const RegisterScreen = ({ navigation }) => {
           </View>
 
           
-          <View style={[styles.dropdownContainer, { zIndex: openActividades ? 1000 : 800 }]}>
+          <View style={[styles.dropdownContainer, { zIndex: openactividades ? 1000 : 800 }]}>
             <Text style={[styles.dropdownTextStyle,{paddingLeft:10}]}> 
               Actividades Preferidas:
             </Text>
             <DropDownPicker
-              open={openActividades}
-              value={actividadesPreferidas}
-              items={itemsActividades}
-              setOpen={setOpenActividades}
-              setValue={setActividadesPreferidas}
-              setItems={setItemsActividades}
+              open={openactividades}
+              value={actividadesCategoria}
+              items={itemsactividades}
+              setOpen={setOpenactividades}
+              setValue={setactividadesCategoria}
+              setItems={setItemsactividades}
               placeholder="Actividades Preferidas"
               placeholderStyle={styles.placeholderText}
               style={styles.dropdownStyle}

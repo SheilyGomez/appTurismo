@@ -11,9 +11,9 @@ exports.registrarUsuario = async (req, res) => {
     nombreUsuario,
     nombreCompleto,
     pais,
-    preferenciasViaje,
-    intereses,
-    actividadesPreferidas,
+    CategoriaViaje,
+    tipoViaje,
+    actividadesCategoria,
     fechaDeNacimiento,
     
   } = req.body;
@@ -24,9 +24,9 @@ exports.registrarUsuario = async (req, res) => {
      !nombreUsuario ||
      !nombreCompleto || 
      !pais || 
-     !preferenciasViaje || 
-     !intereses || 
-     !actividadesPreferidas || 
+     !CategoriaViaje || 
+     !tipoViaje || 
+     !actividadesCategoria || 
      !fechaDeNacimiento
     ) {
     return res.status(400).json({ message: 'Todos los campos son requeridos.' });
@@ -49,9 +49,9 @@ exports.registrarUsuario = async (req, res) => {
       nombreUsuario,
       nombreCompleto,
       pais,
-      preferenciasViaje , 
-      intereses ,      
-      actividadesPreferidas, 
+      CategoriaViaje , 
+      tipoViaje ,      
+      actividadesCategoria, 
       fechaDeNacimiento,
       null 
     );
@@ -92,9 +92,9 @@ exports.updateUserProfile = async (req, res) => {
     nombreUsuario,
     nombreCompleto,
     pais,
-    preferenciasViaje,
-    intereses,
-    actividadesPreferidas,
+    CategoriaViaje,
+    tipoViaje,
+    actividadesCategoria,
     profileImageUrl,      // NUEVO: URL de la imagen de perfil
   } = req.body;
 
@@ -114,9 +114,9 @@ exports.updateUserProfile = async (req, res) => {
     if (nombreUsuario !== undefined) updatedFields.nombreUsuario = nombreUsuario;
     if (nombreCompleto !== undefined) updatedFields.nombreCompleto = nombreCompleto;
     if (pais !== undefined) updatedFields.pais = pais;
-    if (preferenciasViaje !== undefined) updatedFields.preferenciasViaje = preferenciasViaje;
-    if (intereses !== undefined) updatedFields.intereses = intereses;
-    if (actividadesPreferidas !== undefined) updatedFields.actividadesPreferidas = actividadesPreferidas;
+    if (CategoriaViaje !== undefined) updatedFields.CategoriaViaje = CategoriaViaje;
+    if (tipoViaje !== undefined) updatedFields.tipoViaje = tipoViaje;
+    if (actividadesCategoria !== undefined) updatedFields.actividadesCategoria = actividadesCategoria;
     if (profileImageUrl !== undefined) updatedFields.profileImageUrl = profileImageUrl; // Guardar la URL
     
     // Realiza la actualización

@@ -90,20 +90,20 @@ const ProfileScreen = ({ navigation }) => {
         <InfoItem label="País" value={profile.pais} color={colors.text} icon="earth-outline" />
         <InfoItem label="Fecha Nacimiento" value={profile.fechaDeNacimiento} color={colors.text} icon="calendar-outline" />
         <InfoItem
-          label="Preferencias de viaje"
-          value={Array.isArray(profile.preferenciasViaje) ? profile.preferenciasViaje.join(', ') : profile.preferenciasViaje}
+          label="Categoria de viaje"
+          value={Array.isArray(profile.CategoriaViaje) ? profile.CategoriaViaje.join(', ') : profile.CategoriaViaje}
           color={colors.text}
           icon="compass-outline"
         />
         <InfoItem
-          label="Intereses"
-          value={Array.isArray(profile.intereses) ? profile.intereses.join(', ') : profile.intereses}
+          label="tipoViaje"
+          value={Array.isArray(profile.tipoViaje) ? profile.tipoViaje.join(', ') : profile.tipoViaje}
           color={colors.text}
           icon="sparkles-outline"
         />
         <InfoItem
-          label="Actividades preferidas"
-          value={Array.isArray(profile.actividadesPreferidas) ? profile.actividadesPreferidas.join(', ') : profile.actividadesPreferidas}
+          label="actividades preferidas"
+          value={Array.isArray(profile.actividadesCategoria) ? profile.actividadesCategoria.join(', ') : profile.actividadesCategoria}
           color={colors.text}
           icon="walk-outline"
         />

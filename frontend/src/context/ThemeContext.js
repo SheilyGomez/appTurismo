@@ -35,15 +35,18 @@ export const ThemeProvider = ({children})=>{
         darkMode, 
         toggleDarkMode,
         colors:{
-            background: darkMode ? '#333' : '#fcfcfcff',
-            text: darkMode ? '#fff' : '#030d69ff',
-            primary: darkMode ? '#61dafb' : '#007bff',
-            secondary: darkMode ? '#f0f0f0' : '#6c757d',
-            sub_background: darkMode ? '#515155a4' : '#f8f9fa',
-            button: darkMode ? '#5962b9ff' : '#030d69ff',
-            buttonText: darkMode ? '#fff' : '#fff',
-            editbutton: darkMode ? '#ffd965ff':'#ffc107',
-            deletebutton: darkMode ? '#ff4d4d' :'#dc3545',
+            background: darkMode ? '#333' : '#F5F6F8',
+            text: darkMode ? '#eceaeaff' : '#000000ff',
+            primary: darkMode ? '#238f86ff' : '#35A69B',
+            //primary: darkMode ? '#037a85ff' : '#037a85ff',
+            secondary: darkMode ? '#037a85ff' : '#037a85ff',
+            sub_background: darkMode ? '#424242ff' : '#ffffffff',
+            inputBackground: darkMode ? '#444444ff' : '#F5F5F5',
+            inputBorder: darkMode ? '#666' :'#E0E0E0',
+
+            //buttonAdd: darkMode ? '#28a745' : '#47b661ff',
+            buttonCrear: darkMode? '#F28B30':'#F28B30',
+            cancelarbutton: darkMode ? '#c9874eff' :'#F28B30',
             
         }
     };

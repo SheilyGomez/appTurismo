@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }) => {
                     setUser(firebaseUser);
                     const token = await firebaseUser.getIdToken();
                     await AsyncStorage.setItem('userToken', token);
+                    
                     setUserToken(token);
                 } catch (error) {
                     console.error('Error during onAuthStateChanged processing:', error);
@@ -102,7 +103,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         try {
             const response = await AuthService.registerUser(userData);
-            return response; // onAuthStateChanged manejará el auto-logueo si aplica
+            return response; 
         } catch (error) {
             console.error('Register failed:', error);
             throw error;

@@ -1,194 +1,241 @@
-//frontend/src/screens/ProfileScreen.js
-import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Button } from 'react-native'; // Asegúrate de importar Button
-import { useProfile } from '../context/PerfileContext'; 
+import React, { useState, useContext, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, Image, TouchableOpacity,
+  Switch, Alert, ScrollView, ActivityIndicator
+} from 'react-native';
+
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
+import { useProfile } from '../context/PerfileContext';
 import { ThemeContext } from '../context/ThemeContext';
-import { useContext } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
 
 
-const ProfileScreen = () => {
-  const { profile, loading: profileLoading, error: profileError, refreshProfile } = useProfile();
- // const { profile, loading: profileLoading, error: profileError, loadAndSyncProfile } = useProfile();
+const ProfileScreen = ({ navigation }) => {
+  const { profile, loading: profileLoading, isProfileSyncing } = useProfile();
+  const {colors } = useContext(ThemeContext);
 
-  const {colors} = useContext(ThemeContext);
-  const styles = makeStyles(colors);
-
-
-
-  const formatField = (value) => {
-    if (value == null || value === '') return 'N/A'; // Considerar cadenas vacías como N/A
-    if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : 'N/A';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'object' && value !== null) {
-      try {
-        const vals = Object.values(value);
-        if (vals.length) return vals.join(', ');
-        return JSON.stringify(value);
-      } catch {
-        return String(value);
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Se necesita permiso para acceder a la galería.');
       }
-    }
-    return String(value);
-  };
+    })();
+  }, []);
 
-  if (profileLoading) {
+  if (profileLoading || !profile) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Cargando perfil...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text, marginTop: 10 }}>
+          {profileLoading ? "Cargando perfil..." : "Perfil no disponible."}
+        </Text>
       </View>
     );
   }
 
-  if (profileError) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Error al cargar el perfil: {profileError.message || 'Desconocido'}</Text>
-        <Button title="Reintentar" onPress={refreshProfile} />
-      </View>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <View style={styles.centered}>
-        <Text>No hay datos de perfil disponibles.</Text>
-        <Button title="Cargar Perfil" onPress={refreshProfile} />
-      </View>
-    );
-  }
-  console.log('Datos del perfil recibidos:', profile);
- 
-  
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.title}>Mi Perfil</Text>
-      
-      <View style={styles.profileImageContainer}>
-        <Text style={styles.profileImageText}>{profile.nombreCompleto ? profile.nombreCompleto[0].toUpperCase() : 'U'}</Text>
+    <ScrollView
+      contentContainerStyle={[styles.container, { backgroundColor: colors.background },]}
+    >
+      <View style={[styles.headerPlaceholder, { backgroundColor: colors.primary }]} >
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <MaterialIcons name="settings" size={28} color="#fff" />
+        </TouchableOpacity>
       </View>
-      
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>UID:</Text>
-        <Text style={styles.value}>{formatField(profile.id)}</Text> 
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.value}>{formatField(profile.email)}</Text>
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Nombre de Usuario:</Text>
-        <Text style={styles.value}>{formatField(profile.nombreUsuario)}</Text>
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Nombre Completo:</Text>
-        <Text style={styles.value}>{formatField(profile.nombreCompleto)}</Text>
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>País:</Text>
-        <Text style={styles.value}>{formatField(profile.pais)}</Text>
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Preferencias de Viaje:</Text>
-        <Text style={styles.value}>{formatField(profile.preferenciasViaje)}</Text> 
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Intereses:</Text>
-        <Text style={styles.value}>{formatField(profile.intereses)}</Text> 
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Actividades Preferidas:</Text>
-        <Text style={styles.value}>{formatField(profile.actividadesPreferidas)}</Text>
-      </View>
-      {/* Noté que no tienes 'edad' directamente, pero sí 'fechaDeNacimiento' */}
-      {profile.fechaDeNacimiento && (
-        <View style={styles.infoCard}>
-          <Text style={styles.label}>Fecha de Nacimiento:</Text>
-          <Text style={styles.value}>{new Date(profile.fechaDeNacimiento).toLocaleDateString()}</Text>
-          </View>
-      )}
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Rol:</Text>
-        <Text style={styles.value}>{formatField(profile.rol)}</Text>
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Fecha de Creación:</Text>
-        {profile.fechaCreacion && (
-          <Text style={styles.value}>{new Date(profile.fechaCreacion).toLocaleDateString()}</Text>
 
+
+
+      <View style={styles.profileSection}>
+        <View style={styles.avatarContainer}>
+          <Image
+            source={
+              profile?.profileImageUrl ? { uri: profile.profileImageUrl } : require('../../../assets/imagen3.jpeg')
+            }
+            style={styles.avatar}
+          />
+        </View>
+
+        <Text style={[styles.nameText, { color: colors.text }]}>
+          {profile?.nombreCompleto}
+        </Text>
+
+        <Text style={[styles.usernameText, { color: colors.text }]}>
+          @{profile?.nombreUsuario}
+        </Text>
+
+        {isProfileSyncing && (
+          <View style={styles.syncingIndicator}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={{ color: colors.subtext, marginLeft: 5 }}>Sincronizando...</Text>
+          </View>
         )}
+
+        <TouchableOpacity
+          style={[styles.editButton, { backgroundColor: colors.primary }]}
+          onPress={() => navigation.navigate('EditProfile')}
+        >
+          <Text style={styles.editButtonText}>Editar perfil</Text>
+        </TouchableOpacity>
+
       </View>
+
+      <View style={[styles.infoContainer, { backgroundColor: colors.background }]}>
+
+        <InfoItem label="Email" value={profile.email} color={colors.text} icon="mail-outline" />
+        <InfoItem label="País" value={profile.pais} color={colors.text} icon="earth-outline" />
+        <InfoItem label="Fecha Nacimiento" value={profile.fechaDeNacimiento} color={colors.text} icon="calendar-outline" />
+        <InfoItem
+          label="Categoria de viaje"
+          value={Array.isArray(profile.CategoriaViaje) ? profile.CategoriaViaje.join(', ') : profile.CategoriaViaje}
+          color={colors.text}
+          icon="compass-outline"
+        />
+        <InfoItem
+          label="tipoViaje"
+          value={Array.isArray(profile.tipoViaje) ? profile.tipoViaje.join(', ') : profile.tipoViaje}
+          color={colors.text}
+          icon="sparkles-outline"
+        />
+        <InfoItem
+          label="actividades preferidas"
+          value={Array.isArray(profile.actividadesCategoria) ? profile.actividadesCategoria.join(', ') : profile.actividadesCategoria}
+          color={colors.text}
+          icon="walk-outline"
+        />
+      </View>
+
     </ScrollView>
   );
-
 };
 
-function makeStyles(colors) {
-    return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    contentContainer: {
-      padding: 20,
-      paddingBottom: 40,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: '700',
-      color: colors.text,
-      textAlign: 'center',
-      marginBottom: 20,
-    },
-    profileImageContainer: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      backgroundColor: '#a0aec0',
-      justifyContent: 'center',
-      alignItems: 'center',
-      alignSelf: 'center',
-      marginBottom: 20,
-    },
-    profileImageText: {
-      fontSize: 40,
-      fontWeight: 'bold',
-      color: '#ffffff',
-    },
-    infoCard: {
-      backgroundColor: '#ffffff',
-      paddingVertical: 12,
-      paddingHorizontal: 14,
-      borderRadius: 10,
-      marginBottom: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    label: {
-      fontSize: 12,
-      color: '#6b7280',
-      marginBottom: 4,
-      fontWeight: '600',
-    },
-    value: {
-      fontSize: 16,
-      color: '#111827',
-    },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    errorText: {
-      color: 'red',
-      fontSize: 16,
-      marginBottom: 20,
-      textAlign: 'center',
-    }
-  });
 
-}
+const InfoItem = ({ label, value, color, icon }) => (
+  <View style={styles.infoItem}>
+    {icon && <Ionicons name={icon} size={20} color={color} style={styles.infoIcon} />}
+    <Text style={[styles.infoLabel, { color }]}>{label}:</Text>
+    <Text style={[styles.infoValue, { color }]}>{value}</Text>
+  </View>
+);
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    paddingBottom: 50,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerPlaceholder: {
+    width: '100%',
+    height: 120,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 20,
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    padding: 5,
+  },
+  profileSection: {
+    alignItems: 'center',
+    marginTop: -60,
+
+  },
+  avatarContainer: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 114,
+    height: 114,
+    borderRadius: 57,
+  },
+  nameText: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 10,
+    paddingHorizontal: 20,
+  },
+  usernameText: {
+    fontSize: 16,
+    marginTop: 4,
+  },
+  syncingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  editButton: {
+    marginTop: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  infoContainer: {
+    marginTop: 25,
+    width: '95%',
+    borderRadius: 16,
+    padding: 20,
+
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  infoIcon: {
+    marginRight: 10,
+  },
+  infoLabel: {
+    fontWeight: '600',
+    fontSize: 15,
+    width: 120,
+
+  },
+  infoValue: {
+    fontSize: 15,
+    flex: 1,
+  },
+  switchContainer: {
+    marginTop: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '85%',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  switchLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+});
+
+
 export default ProfileScreen;

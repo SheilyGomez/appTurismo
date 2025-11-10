@@ -43,3 +43,4 @@ yarn-error.*
 #archivos de configuración 
 backend/config/serviceAccountKey.json
 frontend/src/auth/firebaseConfig.js
+.env

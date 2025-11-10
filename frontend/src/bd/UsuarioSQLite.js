@@ -8,9 +8,9 @@ export const saveUsuarioProfileLocal = (profileData) => {
     db.runSync(
       `INSERT OR REPLACE INTO usuarios (
         id, firebaseUid, email, nombreUsuario, nombreCompleto, pais,
-        preferenciasViaje, intereses, actividadesPreferidas, rol,
-        fechaDeNacimiento,fechaCreacion ,syncStatus, lastModified
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);`,
+        CategoriaViaje, tipoViaje, actividadesCategoria, rol,
+        fechaDeNacimiento, fechaCreacion, profileImageUrl, syncStatus, lastModified
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`, 
       [
         id,
         profileData.firebaseUid || profileData.uid,
@@ -18,12 +18,13 @@ export const saveUsuarioProfileLocal = (profileData) => {
         profileData.nombreUsuario,
         profileData.nombreCompleto,
         profileData.pais,
-        JSON.stringify(profileData.preferenciasViaje || []),
-        JSON.stringify(profileData.intereses || []),
-        JSON.stringify(profileData.actividadesPreferidas || []),
+        JSON.stringify(profileData.CategoriaViaje || []),
+        JSON.stringify(profileData.tipoViaje || []),
+        JSON.stringify(profileData.actividadesCategoria || []),
         profileData.rol || 'usuario',
         profileData.fechaDeNacimiento || null,
         profileData.fechaCreacion || new Date().toISOString(),
+        profileData.profileImageUrl || null, // Guardar la URL de la imagen de perfil
         profileData.syncStatus || SYNC_STATUS.SYNCHRONIZED,
         new Date().toISOString()
       ]
@@ -35,8 +36,8 @@ export const saveUsuarioProfileLocal = (profileData) => {
     if (result && result.length > 0) {
       const profile = result[0];
       profile.prefeciasViajes = JSON.parse(profile.prefeciasViajes || '[]');
-      profile.intereses = JSON.parse(profile.intereses || '[]');
-      profile.actividadesPreferidas = JSON.parse(profile.actividadesPreferidas || '[]');
+      profile.tipoViaje = JSON.parse(profile.tipoViaje || '[]');
+      profile.actividadesCategoria = JSON.parse(profile.actividadesCategoria || '[]');
       return profile;
     }
 
@@ -53,9 +54,9 @@ export const getUsuarioProfileLocal = () => {
         const result = db.getAllSync(`SELECT * FROM usuarios LIMIT 1;`);
         if (result.length > 0) {
             const profile = result[0]; // getALLSync devuelve un array de objetos
-            profile.preferenciasViaje = JSON.parse(profile.preferenciasViaje || '[]');
-            profile.intereses = JSON.parse(profile.intereses || '[]');
-            profile.actividadesPreferidas = JSON.parse(profile.actividadesPreferidas || '[]');
+            profile.CategoriaViaje = JSON.parse(profile.CategoriaViaje || '[]');
+            profile.tipoViaje = JSON.parse(profile.tipoViaje || '[]');
+            profile.actividadesCategoria = JSON.parse(profile.actividadesCategoria || '[]');
             return profile;
         }
         return null; // No hay perfil guardado
@@ -87,9 +88,9 @@ export const getPendingUserProfiles = () => {
         );
         const profiles = result.map(profile => ({
             ...profile,
-            preferenciasViaje: JSON.parse(profile.preferenciasViaje || '[]'),
-            intereses: JSON.parse(profile.intereses || '[]'),
-            actividadesPreferidas: JSON.parse(profile.actividadesPreferidas || '[]'),
+            CategoriaViaje: JSON.parse(profile.CategoriaViaje || '[]'),
+            tipoViaje: JSON.parse(profile.tipoViaje || '[]'),
+            actividadesCategoria: JSON.parse(profile.actividadesCategoria || '[]'),
         }));
         return profiles;
     } catch (error) {

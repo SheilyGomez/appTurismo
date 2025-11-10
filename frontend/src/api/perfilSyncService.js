@@ -37,7 +37,7 @@ export const performProfileSync = async () => {
     try {
         // Prioridad: Enviar cambios locales antes de descargar posibles actualizaciones del servidor.
         await syncUpProfile();
-        await syncDownProfile();
+        await syncDownProfile(); 
         console.log('Sincronización de perfil finalizada con éxito.');
         await AsyncStorage.setItem(LAST_PROFILE_SYNC_TIMESTAMP_KEY, new Date().toISOString());
         return true;

@@ -2,35 +2,31 @@
 const admin = require('firebase-admin');
 const db = admin.firestore(); // Obtén la referencia a Firestore
 
-// Importa tu clase UsuarioSchema para mantener la consistencia (opcional, pero buena práctica)
 const UsuarioSchema = require('../models/Usuario.js');
 
-// Función para registrar un nuevo usuario (AHORA CON PERFIL EN FIRESTORE)
 exports.registrarUsuario = async (req, res) => {
-  // Desestructura todos los campos que esperas recibir del frontend
   const {
     email,
     password,
     nombreUsuario,
     nombreCompleto,
     pais,
-    preferenciasViaje,
-    intereses,
-    actividadesPreferidas,
-    fechaDeNacimiento
-    // Asumimos que 'rol' también viene en el body si lo necesitas
+    CategoriaViaje,
+    tipoViaje,
+    actividadesCategoria,
+    fechaDeNacimiento,
+    
   } = req.body;
 
-  // Validación básica para los campos más importantes
   if (
      !email || 
      !password || 
      !nombreUsuario ||
      !nombreCompleto || 
      !pais || 
-     !preferenciasViaje || 
-     !intereses || 
-     !actividadesPreferidas || 
+     !CategoriaViaje || 
+     !tipoViaje || 
+     !actividadesCategoria || 
      !fechaDeNacimiento
     ) {
     return res.status(400).json({ message: 'Todos los campos son requeridos.' });
@@ -53,10 +49,11 @@ exports.registrarUsuario = async (req, res) => {
       nombreUsuario,
       nombreCompleto,
       pais,
-      preferenciasViaje , 
-      intereses ,      
-      actividadesPreferidas, 
-      fechaDeNacimiento 
+      CategoriaViaje , 
+      tipoViaje ,      
+      actividadesCategoria, 
+      fechaDeNacimiento,
+      null 
     );
 
     // Convertimos la instancia de la clase a un objeto plano para guardarlo en Firestore
@@ -78,15 +75,83 @@ exports.registrarUsuario = async (req, res) => {
   }
 };
 
+// NUEVA FUNCIÓN: para actualizar el perfil de un usuario en Firestore
 
-// Función para iniciar sesión (se gestiona principalmente en el frontend)
-// El backend puede verificar el token de ID enviado desde el cliente
-exports.iniciarSesion = async (req, res) => {
-  // En una implementación real, el frontend enviaría un token de ID
-  // y el backend lo verificaría. Por simplicidad, este ejemplo es básico.
-  // Para una app móvil, el SDK de cliente de Firebase se encargará del inicio de sesión
-  // y te proporcionará un token que puedes enviar al backend para verificar la sesión.
-  res.status(200).json({ message: 'El inicio de sesión se gestiona en el cliente con el SDK de Firebase.' });
+exports.updateUserProfile = async (req, res) => {
+  const { id } = req.params; // El UID del usuario que se va a actualizar
+  const authUid = req.user.uid; // El UID del usuario autenticado (del token)
+
+  // Validación de seguridad: Asegúrate de que el usuario autenticado está actualizando su propio perfil.
+  if (id !== authUid) {
+    return res.status(403).json({ message: 'No tienes permiso para actualizar este perfil.' });
+  }
+
+  // Desestructura los campos que se pueden actualizar.
+  // No se permite que el UID, email o fecha de creación se actualicen directamente aquí.
+  const {
+    nombreUsuario,
+    nombreCompleto,
+    pais,
+    CategoriaViaje,
+    tipoViaje,
+    actividadesCategoria,
+    profileImageUrl,      // NUEVO: URL de la imagen de perfil
+  } = req.body;
+
+  try {
+    const userRef = db.collection('usuarios').doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: 'Perfil de usuario no encontrado.' });
+    }
+
+    // Construye el objeto con los datos a actualizar
+    const updatedFields = {
+      lastModified: admin.firestore.FieldValue.serverTimestamp(), // Firestore para obtener el timestamp del servidor
+    };
+
+    if (nombreUsuario !== undefined) updatedFields.nombreUsuario = nombreUsuario;
+    if (nombreCompleto !== undefined) updatedFields.nombreCompleto = nombreCompleto;
+    if (pais !== undefined) updatedFields.pais = pais;
+    if (CategoriaViaje !== undefined) updatedFields.CategoriaViaje = CategoriaViaje;
+    if (tipoViaje !== undefined) updatedFields.tipoViaje = tipoViaje;
+    if (actividadesCategoria !== undefined) updatedFields.actividadesCategoria = actividadesCategoria;
+    if (profileImageUrl !== undefined) updatedFields.profileImageUrl = profileImageUrl; // Guardar la URL
+    
+    // Realiza la actualización
+    await userRef.update(updatedFields);
+
+    // Opcional: Si el nombre de usuario cambió, también se actualiza el displayName en Firebase Auth
+    if (nombreUsuario && nombreUsuario !== userDoc.data().nombreUsuario) {
+        await admin.auth().updateUser(id, { displayName: nombreUsuario });
+    }
+
+    // Obtener el perfil actualizado para devolverlo
+    const updatedUserDoc = await userRef.get();
+    const rawData = updatedUserDoc.data();
+    const Timestamp = admin.firestore.Timestamp;
+    const formattedData = {};
+    for (const [key, value] of Object.entries(rawData)) {
+        if (value instanceof Timestamp) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('nacimiento')) {
+                formattedData[key] = value.toDate().toISOString().split('T')[0];
+            } else {
+                formattedData[key] = value.toDate().toISOString();
+            }
+        } else {
+            formattedData[key] = value;
+        }
+    }
+
+
+    res.status(200).json({ message: 'Perfil actualizado con éxito.', uid: updatedUserDoc.id, ...formattedData });
+
+  } catch (error) {
+    console.error('Error al actualizar perfil de usuario:', error);
+    res.status(500).json({ message: 'Error interno al actualizar el perfil.' });
+  }
 };
 
 // Función para obtener el perfil de un usuario desde Firestore

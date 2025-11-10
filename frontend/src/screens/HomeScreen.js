@@ -17,6 +17,13 @@ import {
 } from "react-native";
 import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+//frontend/src/screens/HomeScreen.js
+import React from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+import { useAuth } from '../auth/AuthContext';
+import { useProfile } from '../context/PerfileContext';
+import { ThemeContext } from '../context/ThemeContext';
+import { useContext } from 'react';
 
 const { width } = Dimensions.get("window");
 
@@ -25,6 +32,11 @@ const HomeScreen = ({ navigation }) => {
   const fade = useState(new Animated.Value(0))[0];
   const slide = useState(new Animated.Value(20))[0];
   const scale = useState(new Animated.Value(0.98))[0];
+  const { colors } = useContext(ThemeContext);
+  const { logout } = useAuth();
+  const { profile, loading: profileLoading, error: profileError } = useProfile();
+  const styles = makeStyles(colors);
+
 
   useEffect(() => {
     Animated.parallel([
@@ -280,15 +292,59 @@ const HomeScreen = ({ navigation }) => {
           </ScrollView>
         </Animated.View>
       </ScrollView>
+      <View style={styles.container}>
+      <Text style={styles.welcomeText}>¡Bienvenido, {profile?.nombreUsuario || profile?.nombreCompleto || profile?.email || 'usuario'}!</Text>
+      <Text style={styles.detailText}>Email: {profile?.email || 'N/A'}</Text>
+      <Text style={styles.detailText}>País: {profile?.pais || 'N/A'}</Text>
+      <Text style={styles.detailText}>Categoria: {Array.isArray(profile?.CategoriaViaje) ? profile.CategoriaViaje.join(', ') : profile?.CategoriaViaje || 'N/A'}</Text>
+
+
+      <Button title="configuracion" onPress={() => navigation.navigate('Settings')} />
+      <Button title="Cerrar Sesión" onPress={logout} color="red" />
+    </View>
     </SafeAreaView>
+
   );
 };
 
 
+function makeStyles(colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+      backgroundColor: colors.background,
+    },
+    welcomeText: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: colors.text,
+    },
+    detailText: {
+      fontSize: 16,
+      marginBottom: 10,
+      color: '#34495e',
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    errorText: {
+      color: 'red',
+      fontSize: 16,
+      marginBottom: 20,
+      textAlign: 'center',
+    }
+  })
+};
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FFFFFF" },
   screen: { flex: 1, backgroundColor: "#FFFFFF" },
-
   // HEADER
   headerWrap: { paddingHorizontal: 18, marginTop: 12 },
   headerGradient: {

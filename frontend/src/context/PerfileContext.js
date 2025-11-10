@@ -3,12 +3,11 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import {
     performProfileSync,
     getUserProfile as getProfileFromSyncService,
-    SYNC_STATUS,
     isConnected // Importa isConnected para decisiones de UI
 } from '../api/perfilSyncService';
 import { saveUsuarioProfileLocal, updateUsuarioProfileLocalStatus, clearUsuarioProfileLocal } from '../bd/UsuarioSQLite';
 import { useAuth } from '../auth/AuthContext'; // Para saber si hay un usuario logueado
-
+import { SYNC_STATUS } from '../api/syncStatus';
 const ProfileContext = createContext();
 
 export const ProfileProvider = ({ children }) => {

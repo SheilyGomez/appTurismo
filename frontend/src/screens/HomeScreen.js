@@ -1,5 +1,4 @@
-// HomeScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,478 +12,937 @@ import {
   Dimensions,
   Animated,
   Easing,
+  ActivityIndicator,
+  Modal,
   Button,
+  Keyboard,
 } from "react-native";
-import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-//frontend/src/screens/HomeScreen.js
-import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
-import { useAuth } from '../auth/AuthContext';
-import { useProfile } from '../context/PerfileContext';
-import { ThemeContext } from '../context/ThemeContext';
-import { useContext } from 'react';
+import { fetchDestinosAPI } from "../api/apiDestinos";
+import { getUsuarioProfileLocal } from "../bd/UsuarioSQLite";
 
 const { width } = Dimensions.get("window");
 
+
+const CheckboxItem = ({ label, isChecked, onPress }) => (
+  <TouchableOpacity style={styles.checkboxContainer} onPress={onPress}>
+    <Ionicons
+      name={isChecked ? "checkbox" : "checkbox-outline"}
+      size={24}
+      color={isChecked ? "#6E4BFF" : "#8DA6A9"}
+    />
+    <Text style={styles.checkboxLabel}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const CollapsibleFilterSection = ({ title, options, selectedOptions, onToggle }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <View style={styles.collapsibleSection}>
+      <TouchableOpacity
+        style={styles.collapsibleHeader}
+        onPress={() => setIsExpanded(!isExpanded)}
+      >
+        <Text style={styles.collapsibleTitle}>{title}</Text>
+        <Ionicons
+          name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"}
+          size={22}
+          color="#2F4750"
+        />
+      </TouchableOpacity>
+      {isExpanded && (
+        <View style={styles.collapsibleContent}>
+          {options.length > 0 ? (
+            options.map((option) => (
+              <CheckboxItem
+                key={option}
+                label={option}
+                isChecked={selectedOptions.includes(option)}
+                onPress={() => onToggle(option)}
+              />
+            ))
+          ) : (
+            <Text style={styles.collapsibleEmpty}>No hay opciones</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+
+const FilterResultCard = ({ destino, onPress }) => (
+  <TouchableOpacity style={styles.resultCard} onPress={onPress} activeOpacity={0.9}> 
+    <Image
+      source={{ uri: destino.imagenPrincipal }}
+      style={styles.resultImage}
+    />
+    <View style={styles.resultBody}>
+      <Text style={styles.resultTitle} numberOfLines={2}>{destino.nombre}</Text>
+      <View style={styles.resultLocationRow}>
+        <Ionicons name="location-outline" size={12} color="#6A8B90" />
+        <Text style={styles.resultLocationText} numberOfLines={1}>{destino.ubicacion}</Text>
+      </View>
+      <Text style={styles.resultCategory} numberOfLines={1}>{destino.categoriaViaje}</Text>
+    </View>
+  </TouchableOpacity>
+);
+
+const FilterModal = ({
+  visible,
+  onClose,
+  onApply,
+  onClear,
+  currentFilters,
+  options,
+}) => {
+  const [localFilters, setLocalFilters] = useState(currentFilters);
+
+  useEffect(() => {
+    setLocalFilters(currentFilters);
+  }, [currentFilters]);
+
+  const toggleFilterValue = (key, value) => {
+    setLocalFilters(prev => {
+      const currentValues = prev[key] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
+      return { ...prev, [key]: newValues };
+    });
+  };
+
+  const handleApply = () => {
+    onApply(localFilters);
+    onClose();
+  };
+
+  const handleClear = () => {
+    onClear();
+    onClose();
+  };
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Filtrar Destinos</Text>
+          <ScrollView>
+            <CollapsibleFilterSection
+              title="Ubicación"
+              options={options.ubicacion}
+              selectedOptions={localFilters.ubicacion || []}
+              onToggle={(value) => toggleFilterValue('ubicacion', value)}
+            />
+            <CollapsibleFilterSection
+              title="Categoría de Viaje"
+              options={options.categoriaViaje}
+              selectedOptions={localFilters.categoriaViaje || []}
+              onToggle={(value) => toggleFilterValue('categoriaViaje', value)}
+            />
+            <CollapsibleFilterSection
+              title="Tipo de Viaje"
+              options={options.tipoViaje}
+              selectedOptions={localFilters.tipoViaje || []}
+              onToggle={(value) => toggleFilterValue('tipoViaje', value)}
+            />
+            <CollapsibleFilterSection
+              title="Actividades"
+              options={options.categoriaActividades}
+              selectedOptions={localFilters.categoriaActividades || []}
+              onToggle={(value) => toggleFilterValue('categoriaActividades', value)}
+            />
+          </ScrollView>
+          <View style={styles.modalButtonRow}>
+            <Button title="Limpiar" onPress={handleClear} color="#FF6347" />
+            <Button title="Aplicar" onPress={handleApply} />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+
+const ResultsHeader = ({ count, search, activeFilters }) => {
+  const activeFilterKeys = Object.keys(activeFilters).filter(
+    key => activeFilters[key].length > 0
+  );
+
+  const formatKey = (key) => {
+    switch (key) {
+      case 'ubicacion': return 'Ubicación';
+      case 'categoriaViaje': return 'Categoría';
+      case 'tipoViaje': return 'Tipo';
+      case 'categoriaActividades': return 'Actividad';
+      default: return key;
+    }
+  };
+
+  const filterNames = activeFilterKeys.map(formatKey);
+
+  return (
+    <View style={styles.resultsHeaderContainer}>
+      <Text style={styles.resultsTitleText}>
+        {count} Resultado(s)
+      </Text>
+      {search.length > 0 && (
+        <View style={styles.filterTagContainer}>
+          <Text style={styles.filterTagLabel}>Buscando:</Text>
+          <View style={styles.filterTag}>
+            <Text style={styles.filterTagChipText}>{search}</Text>
+          </View>
+        </View>
+      )}
+      {filterNames.length > 0 && (
+        <View style={styles.filterTagContainer}>
+          <Text style={styles.filterTagLabel}>Filtros:</Text>
+          {filterNames.map(name => (
+            <View key={name} style={styles.filterTag}>
+              <Text style={styles.filterTagChipText}>{name}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
+
+const renderStars = (rating = 4.9, reviews = 342) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 >= 0.5;
+  return (
+    <View style={styles.ratingContainer}>
+      <View style={styles.starsRow}>
+        {[...Array(5)].map((_, i) => {
+          let starName = "star-outline";
+          if (i < fullStars) starName = "star";
+          else if (i === fullStars && hasHalfStar) starName = "star-half";
+          return (
+            <Ionicons key={i} name={starName} size={14} color="#FFCC5C" style={{ marginRight: 1 }} />
+          );
+        })}
+      </View>
+      <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+      <Text style={styles.reviewsText}>· {reviews}</Text>
+    </View>
+  );
+};
+
+const QuickAction = ({ icon, label, color, onPress }) => (
+  <TouchableOpacity
+    style={[styles.quickActionBtn, { backgroundColor: color }]}
+    onPress={onPress}
+  >
+    {icon}
+    <Text style={styles.quickLabel}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const ExploreCard = ({ item }) => {
+  return (
+    <TouchableOpacity style={styles.exploreCard}>
+      <View style={styles.exploreIcon}>
+        <Ionicons name={"location"} size={24} color="#6E4BFF" />
+      </View>
+      <Text style={styles.exploreTitle}>{item.nombre}</Text>
+    </TouchableOpacity>
+  );
+};
+
+const Section = ({ title, data, navigation }) => {
+  const [selectedItemId, setSelectedItemId] = useState(null);
+
+  if (!data || data.length === 0) return null;
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <TouchableOpacity>
+          <Text style={styles.seeAll}>Ver todo</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinosScroll}>
+        {data.map((d) => (
+          <TouchableOpacity
+            key={d.id}
+            activeOpacity={0.9}
+            style={styles.destCard}
+            onPress={() => setSelectedItemId(selectedItemId === d.id ? null : d.id)}
+          >
+            <View style={styles.destImageWrap}>
+              <Image
+                source={{ uri: d.imagenPrincipal }}
+                style={styles.destImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.destBody}>
+              <Text style={styles.destTitle} numberOfLines={2}>{d.nombre}</Text>
+              <Text style={styles.locationText}>{d.ubicacion}</Text>
+              <Text style={styles.destDesc} numberOfLines={2}>{d.descripcion}</Text>
+              <View style={styles.ratingRow}>
+                {renderStars(d.valoracionPromedio, d.numReviews || 342)}
+              </View>
+              {selectedItemId === d.id && (
+                <View style={styles.cardActionsContainer}>
+
+                  <TouchableOpacity style={[styles.cardButton, styles.cardButtonSecondary]} onPress={() => navigation.navigate('DestinoDetailScreen', { destinoId: d.id })}>
+                    <Text style={styles.cardButtonTextSecondary}>Más Detalles</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
+const HomeScreenContent = ({ data, recommended, navigation }) => {
+  const destacados = data.filter((d) => d.destacado);
+  const explorarMas = data.filter((d) => !d.destacado);
+
+  const categoriasViaje = [
+    ...new Set(data.map((d) => d.categoriaViaje).filter(Boolean)),
+  ].map((cat) => ({
+    nombre: cat,
+    items: data.filter((d) => d.categoriaViaje === cat),
+  }));
+
+  const categoriasActividades = [
+    ...new Set(data.flatMap((d) => d.categoriaActividades || [])),
+  ].map((act) => ({
+    nombre: act,
+    items: data.filter(
+      (d) => d.categoriaActividades && d.categoriaActividades.includes(act)
+    ),
+  }));
+
+  return (
+    <View>
+      {recommended.length > 0 && (
+        <Section title="Recomendados para ti" data={recommended} navigation={navigation}/>
+      )}
+      <View style={styles.section}>
+        <View style={styles.activityCard}>
+          <Text style={styles.activityTitle}>Bird-Watching</Text>
+          <Text style={styles.activityDescription}>
+            Unique sunset tours to see rare birds and coastal flights.
+          </Text>
+          <TouchableOpacity style={styles.exploreNowButton}>
+            <Text style={styles.exploreNowText}>Explore Now</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {explorarMas.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Explorar Más</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAll}>More</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.exploreScroll}
+          >
+            {explorarMas.slice(0, 5).map((item) => (
+              <ExploreCard key={item.id} item={item} />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+      {destacados.length > 0 && (
+        <Section title="Destinos Destacados" data={destacados} navigation={navigation}/>
+      )}
+      {categoriasViaje.map((cat, idx) => (
+        <Section
+          key={idx}
+          title={`Viajes de ${cat.nombre}`}
+          data={cat.items}
+          navigation={navigation}
+        />
+      ))}
+      {categoriasActividades.map((cat, idx) => (
+        <Section
+          key={idx}
+          title={`Actividades de ${cat.nombre}`}
+          data={cat.items}
+          navigation={navigation}
+        />
+      ))}
+    </View>
+  );
+};
+
 const HomeScreen = ({ navigation }) => {
-  // animaciones
+  // Animaciones
   const fade = useState(new Animated.Value(0))[0];
   const slide = useState(new Animated.Value(20))[0];
   const scale = useState(new Animated.Value(0.98))[0];
-  const { colors } = useContext(ThemeContext);
-  const { logout } = useAuth();
-  const { profile, loading: profileLoading, error: profileError } = useProfile();
-  const styles = makeStyles(colors);
 
+  // Estado
+  const [allDestinos, setAllDestinos] = useState([]);
+  const [filteredDestinos, setFilteredDestinos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [userProfile, setUserProfile] = useState(null); 
 
+  const [activeFilters, setActiveFilters] = useState({
+    ubicacion: [],
+    categoriaViaje: [],
+    tipoViaje: [],
+    categoriaActividades: [],
+  });
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Carga inicial
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(slide, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.spring(scale, { toValue: 1, friction: 8, useNativeDriver: true }),
     ]).start();
+
+    const loadAllData = async () => {
+      try {
+        setLoading(true);
+        const profile = getUsuarioProfileLocal();
+        setUserProfile(profile);
+        const res = await fetchDestinosAPI({});
+        setAllDestinos(res.data || []);
+      } catch (error) {
+        console.error("Error en la carga inicial:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAllData();
   }, []);
 
-  // datos de ejemplo con URLs
-  const [destinosSugeridos] = useState([
-    {
-      destinoid: "1",
-      nombre: "Atardecer Tropical",
-      descripcion: "Atardeceres dorados sobre la playa — pura vibra veraniega.",
-      ubicacion: "Bali, Indonesia",
-      valoracionPromedio: 4.9,
-      totalResenas: 342,
-      fotos: ["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80&auto=format&fit=crop"],
-      duracion: "7 Días",
-      distancia: "3,200 km",
-      precio: "$1,150",
-      destacado: true,
-      color: "#C7B2FF",
-    },
-    {
-      destinoid: "2",
-      nombre: "Bahía Turquesa",
-      descripcion: "Aguas cristalinas turquesa y playas de arena suave.",
-      ubicacion: "Tulum, México",
-      valoracionPromedio: 4.8,
-      totalResenas: 198,
-      fotos: ["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?crop=entropy&cs=tinysrgb&fit=crop&w=1200&q=60"],
-      duracion: "5 Días",
-      distancia: "1,200 km",
-      precio: "$980",
-      destacado: true,
-      color: "#A7E3F0",
-    },
-    {
-      destinoid: "3",
-      nombre: "Calles Coloniales",
-      descripcion: "Calles empedradas, colores y cultura en cada esquina.",
-      ubicacion: "Cartagena, Colombia",
-      valoracionPromedio: 4.7,
-      totalResenas: 145,
-      fotos: ["https://images.unsplash.com/photo-1505765055605-4c22569c4a27?w=1200&q=80&auto=format&fit=crop"],
-      duracion: "4 Días",
-      distancia: "1,800 km",
-      precio: "$760",
-      destacado: false,
-      color: "#FFD8B2",
-    },
-    {
-      destinoid: "4",
-      nombre: "Escapada a la Selva",
-      descripcion: "Bosques llenos de vida, cascadas y senderos escondidos.",
-      ubicacion: "Costa Rica",
-      valoracionPromedio: 4.8,
-      totalResenas: 212,
-      fotos: ["https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&q=80&auto=format&fit=crop"],
-      duracion: "6 Días",
-      distancia: "2,400 km",
-      precio: "$1,050",
-      destacado: true,
-      color: "#CFF7E6",
-    },
-  ]);
+  const filterOptions = useMemo(() => {
+    const getUniqueValues = (key) => [
+      ...new Set(allDestinos.map(d => d[key]).filter(Boolean))
+    ].sort();
+    const getUniqueArrayValues = (key) => [
+      ...new Set(allDestinos.flatMap(d => d[key] || []).filter(Boolean))
+    ].sort();
+    return {
+      ubicacion: getUniqueValues('ubicacion'),
+      categoriaViaje: getUniqueValues('categoriaViaje'),
+      tipoViaje: getUniqueValues('tipoViaje'),
+      categoriaActividades: getUniqueArrayValues('categoriaActividades'),
+    };
+  }, [allDestinos]);
 
-  const [restaurantesCercanos] = useState([
-    { id: "1", nombre: "Bocados del Atardecer", distancia: "0.6 km", rating: 4.7, tipo: "Mariscos", color: "#FDE7C8" },
-    { id: "2", nombre: "Café Lavanda", distancia: "1.1 km", rating: 4.6, tipo: "Cafetería", color: "#E8D6FF" },
-    { id: "3", nombre: "Parrilla del Océano", distancia: "2.0 km", rating: 4.5, tipo: "Parrilla", color: "#D6F3FF" },
-  ]);
-
-  const explorarMas = [
-    { id: "e1", title: "Cascadas Escondidas", img: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=60&auto=format&fit=crop" },
-    { id: "e2", title: "Pueblos Coloniales", img: "https://images.unsplash.com/photo-1505765055605-4c22569c4a27?w=800&q=60&auto=format&fit=crop" },
-    { id: "e3", title: "Arrecifes de Coral", img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=60&auto=format&fit=crop" },
-    { id: "e4", title: "Senderos del Bosque", img: "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?w=800&q=60&auto=format&fit=crop" },
-  ];
-
-  const renderStars = (value) => {
-    const full = Math.floor(value);
-    const arr = [];
-    for (let i = 0; i < 5; i++) {
-      arr.push(<Ionicons key={i} name={i < full ? "star" : "star-outline"} size={12} color="#FFCC5C" style={{ marginRight: 3 }} />);
+  const recommendedDestinos = useMemo(() => {
+    if (!userProfile || !allDestinos.length) {
+      return [];
     }
-    return <View style={{ flexDirection: "row" }}>{arr}</View>;
+    const prefCatViaje = userProfile.CategoriaViaje || [];
+    const prefTipoViaje = userProfile.tipoViaje || [];
+    const prefActividades = userProfile.actividadesCategoria || [];
+    const scoredDestinos = allDestinos.map(destino => {
+      let score = 0;
+      if (destino.categoriaViaje && prefCatViaje.includes(destino.categoriaViaje)) {
+        score += 1;
+      }
+      if (destino.tipoViaje && prefTipoViaje.includes(destino.tipoViaje)) {
+        score += 1;
+      }
+      if (destino.categoriaActividades && destino.categoriaActividades.some(act => prefActividades.includes(act))) {
+        score += 1;
+      }
+      return { ...destino, recommendationScore: score };
+    });
+    return scoredDestinos
+      .filter(d => d.recommendationScore > 0)
+      .sort((a, b) => b.recommendationScore - a.recommendationScore);
+  }, [allDestinos, userProfile]);
+
+  useEffect(() => {
+    const hasSearch = search.length > 0;
+    const hasActiveFilters = Object.values(activeFilters).some(arr => arr.length > 0);
+    const isFiltering = hasSearch || hasActiveFilters;
+
+    if (!isFiltering) {
+      setFilteredDestinos([]);
+      return;
+    }
+    let tempFiltered = [...allDestinos];
+    if (hasSearch) {
+      tempFiltered = tempFiltered.filter(d =>
+        d.nombre.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    Object.keys(activeFilters).forEach(key => {
+      const filterArray = activeFilters[key];
+      if (filterArray.length > 0) {
+        if (key === 'categoriaActividades') {
+          tempFiltered = tempFiltered.filter(d =>
+            d.categoriaActividades && 
+            d.categoriaActividades.some(act => filterArray.includes(act))
+          );
+        } else {
+          tempFiltered = tempFiltered.filter(d =>
+            d[key] && filterArray.includes(d[key])
+          );
+        }
+      }
+    });
+    setFilteredDestinos(tempFiltered);
+  }, [search, activeFilters, allDestinos]);
+
+
+  const handleBuscar = () => Keyboard.dismiss();
+
+  const handleClearAllFilters = () => {
+    setActiveFilters({
+      ubicacion: [],
+      categoriaViaje: [],
+      tipoViaje: [],
+      categoriaActividades: [],
+    });
+    setSearch("");
   };
 
-  const QuickAction = ({ icon, label, color, onPress }) => (
-    <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: color }]} onPress={onPress}>
-      <View style={styles.quickIconWrap}>{icon}</View>
-      <Text style={styles.quickLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
+  const handleApplyFilters = (modalFilters) => {
+    setActiveFilters(modalFilters);
+  };
+
+  const isFiltering = search.length > 0 || Object.values(activeFilters).some(arr => arr.length > 0);
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* ENCABEZADO */}
-        <Animated.View style={[styles.headerWrap, { opacity: fade, transform: [{ translateY: slide }, { scale }] }]}>
-          <LinearGradient colors={["#D8C6FF", "#C5E8FF", "#FFF1D6"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerGradient}>
-            <View style={styles.headerTop}>
-              <View>
-                <Text style={styles.welcomeText}>Bienvenido a</Text>
-                <Text style={styles.appName}>U P R I S E <Text style={styles.appNameShort}>T R A V E L</Text></Text>
-              </View>
-
-              <TouchableOpacity style={styles.profileBtn}>
-                <Image source={{ uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80&auto=format&fit=crop" }} style={styles.profileImg} />
-              </TouchableOpacity>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* HEADER */}
+        <Animated.View
+          style={[
+            styles.headerWrap,
+            { opacity: fade, transform: [{ translateY: slide }, { scale }] },
+          ]}
+        >
+          <View style={styles.header}>
+            <Text style={styles.welcomeTitle}>Bienvenido</Text>
+            <View style={styles.welcomeSection}>
+              <Text style={styles.welcomeText}>Bienvenido a</Text>
+              <Text style={styles.appName}>
+                <Text style={styles.upriseText}>UPRISE</Text>
+                <Text style={styles.travelText}> TRAVEL</Text>
+              </Text>
             </View>
-
-            {/* BUSCADOR */}
-            <View style={styles.searchWrap}>
+            <View style={styles.searchContainer}>
               <View style={styles.searchBox}>
-                <Ionicons name="search" size={18} color="#6A8B90" />
+                <Ionicons name="search" size={18} color="#8DA6A9" />
                 <TextInput
-                  placeholder="Buscar destinos, actividades..."
+                  placeholder="Buscar por nombre..."
                   placeholderTextColor="#8DA6A9"
                   style={styles.searchInput}
+                  value={search}
+                  onChangeText={setSearch}
+                  onSubmitEditing={handleBuscar}
                 />
-                <TouchableOpacity>
-                  <Ionicons name="options-outline" size={18} color="#6A8B90" />
+                <TouchableOpacity onPress={() => setIsFilterModalVisible(true)}>
+                  <Ionicons name="options-outline" size={22} color="#6E4BFF" />
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* ACCESOS RÁPIDOS */}
-            <View style={styles.quickRowWrap}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickScrollContent}>
-                <QuickAction icon={<Ionicons name="map" size={20} color="#FFF" />} label="Itinerarios" color="#6E4BFF" />
-                <QuickAction icon={<Ionicons name="calendar" size={20} color="#FFF" />} label="Reservas" color="#00A6D6" />
-                <QuickAction icon={<Ionicons name="chatbubbles" size={20} color="#FFF" />} label="Foros" color="#FF8A65" />
-                <QuickAction icon={<Ionicons name="heart" size={20} color="#FFF" />} label="Favoritos" color="#D7B6FF" />
-                <QuickAction icon={<Ionicons name="person" size={20} color="#FFF" />} label="Perfil" color="#FFD59A" />
-              </ScrollView>
-            </View>
-          </LinearGradient>
-        </Animated.View>
-
-        {/* DESCUBRIR */}
-        <Animated.View style={[styles.section, { opacity: fade, transform: [{ translateY: slide }] }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Descubrir</Text>
-            <TouchableOpacity><Text style={styles.seeAll}>Ver todo</Text></TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinosScroll}>
-            {destinosSugeridos.map((d) => (
-              <Animated.View key={d.destinoid} style={{ marginRight: 18 }}>
-                <TouchableOpacity activeOpacity={0.9} style={[styles.destCard, { borderColor: d.color }]}>
-                  <View style={styles.destImageWrap}>
-                    <Image source={{ uri: d.fotos[0] }} style={styles.destImage} resizeMode="cover" />
-                    <LinearGradient colors={["transparent", "rgba(0,0,0,0.22)"]} style={styles.destOverlay} />
-                    {d.destacado && <View style={[styles.pill, { backgroundColor: d.color }]}><Text style={styles.pillText}>Popular</Text></View>}
-                  </View>
-
-                  <View style={styles.destBody}>
-                    <View style={styles.destRow}>
-                      <Text style={[styles.destTitle, { color: d.color }]} numberOfLines={1}>{d.nombre}</Text>
-                      <Text style={[styles.destPrice, { color: d.color }]}>{d.precio}</Text>
-                    </View>
-
-                    <View style={styles.locationRow}>
-                      <Ionicons name="location" size={12} color="#6A8B90" />
-                      <Text style={styles.locationText}>{d.ubicacion}</Text>
-                    </View>
-
-                    <Text style={styles.destDesc} numberOfLines={2}>{d.descripcion}</Text>
-
-                    <View style={styles.metaRow}>
-                      <View style={styles.metaItem}>
-                        <Ionicons name="time" size={12} color="#6A8B90" />
-                        <Text style={styles.metaText}>{d.duracion}</Text>
-                      </View>
-                      <View style={styles.metaItem}>
-                        <FontAwesome5 name="route" size={12} color="#6A8B90" />
-                        <Text style={styles.metaText}>{d.distancia}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.ratingRow}>
-                      {renderStars(d.valoracionPromedio)}
-                      <Text style={styles.ratingText}>{d.valoracionPromedio.toFixed(1)} · {d.totalResenas}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </Animated.View>
-            ))}
-          </ScrollView>
-        </Animated.View>
-
-        {/* RESTAURANTES CERCANOS */}
-        <Animated.View style={[styles.section, { opacity: fade, transform: [{ translateY: slide }] }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Restaurantes Cercanos</Text>
-            <TouchableOpacity><Text style={styles.seeAll}>Ver todo</Text></TouchableOpacity>
-          </View>
-
-          <View style={styles.restContainer}>
-            {restaurantesCercanos.map((r) => (
-              <TouchableOpacity key={r.id} style={styles.restCard}>
-                <View style={styles.restLeft}>
-                  <Text style={styles.restName}>{r.nombre}</Text>
-                  <Text style={styles.restType}>{r.tipo}</Text>
-                  <View style={styles.restMeta}>
-                    {renderStars(r.rating)}
-                    <Text style={styles.restDistance}>{r.distancia}</Text>
-                  </View>
-                </View>
-                <View style={[styles.restIcon, { backgroundColor: r.color }]}>
-                  <MaterialIcons name="restaurant" size={20} color="#fff" />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* PROMOCIÓN */}
-        <Animated.View style={[styles.section, { opacity: fade, transform: [{ translateY: slide }] }]}>
-          <View style={styles.promoCard}>
-            <LinearGradient colors={["#E8D6FF", "#C5E8FF"]} style={styles.promoLeft}>
-              <Text style={styles.promoTitle}>Avistamiento de Aves</Text>
-              <Text style={styles.promoText}>Tours únicos al atardecer para ver aves exóticas y vuelos costeros.</Text>
-              <TouchableOpacity style={styles.promoBtn}><Text style={styles.promoBtnText}>Explorar Ahora</Text></TouchableOpacity>
-              <Button title="Explorar Ahora" onPress={() => navigation.navigate('Payment')} />
-                <Button title="Explorar Ahora" onPress={() => navigation.navigate('DestinationDetail')} />
-            </LinearGradient>
-            <View style={styles.promoRight}>
-              <Image source={{ uri: "https://images.unsplash.com/photo-1505765055605-4c22569c4a27?w=800&q=60&auto=format&fit=crop" }} style={styles.promoImg} />
+            <View style={styles.separator} />
+            <View style={styles.quickActions}>
+              <QuickAction
+                icon={<Ionicons name="map-outline" size={24} color="#FFFFFF" />}
+                label="Itinerarios"
+                color="#7C4DFF"
+                onPress={() => {}}
+              />
+              <QuickAction
+                icon={<Ionicons name="calendar-outline" size={24} color="#FFFFFF" />}
+                label="Reservas"
+                color="#03A9F4"
+                onPress={() => {}}
+              />
+              <QuickAction
+                icon={<Ionicons name="chatbubbles-outline" size={24} color="#FFFFFF" />}
+                label="Foros"
+                color="#FF7043"
+                onPress={() => {}}
+              />
             </View>
           </View>
         </Animated.View>
 
-        {/* EXPLORAR MÁS */}
-        <Animated.View style={[styles.section, { opacity: fade, transform: [{ translateY: slide }] }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Explorar Más</Text>
-            <TouchableOpacity><Text style={styles.seeAll}>Más</Text></TouchableOpacity>
+        {loading ? (
+          <ActivityIndicator size="large" color="#6E4BFF" style={{ marginTop: 40 }} />
+        ) : isFiltering ? (
+          <View style={styles.resultsContainer}>
+            <ResultsHeader 
+              count={filteredDestinos.length}
+              search={search}
+              activeFilters={activeFilters}
+            />
+            {filteredDestinos.length > 0 ? (
+              <View style={styles.resultsGridContainer}>
+                {filteredDestinos.map((destino) => (
+                  <FilterResultCard
+                    key={destino.id}
+                    destino={destino}
+                    onPress={() => navigation.navigate('DestinoDetailScreen', { destinoId: destino.id })}
+                  />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.resultsEmpty}>
+                No se encontraron destinos con esos criterios.
+              </Text>
+            )}
           </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.exploreScroll}>
-            {explorarMas.map((e) => (
-              <TouchableOpacity style={styles.smallCard} key={e.id}>
-                <Image source={{ uri: e.img }} style={styles.smallImg} />
-                <Text style={styles.smallTitle} numberOfLines={1}>{e.title}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
+        ) : (
+        
+          <HomeScreenContent data={allDestinos} recommended={recommendedDestinos} navigation={navigation}/>
+        )}
       </ScrollView>
-      <View style={styles.container}>
-      <Text style={styles.welcomeText}>¡Bienvenido, {profile?.nombreUsuario || profile?.nombreCompleto || profile?.email || 'usuario'}!</Text>
-      <Text style={styles.detailText}>Email: {profile?.email || 'N/A'}</Text>
-      <Text style={styles.detailText}>País: {profile?.pais || 'N/A'}</Text>
-      <Text style={styles.detailText}>Categoria: {Array.isArray(profile?.CategoriaViaje) ? profile.CategoriaViaje.join(', ') : profile?.CategoriaViaje || 'N/A'}</Text>
-
-
-      <Button title="configuracion" onPress={() => navigation.navigate('Settings')} />
-      <Button title="Cerrar Sesión" onPress={logout} color="red" />
-    </View>
+      <FilterModal
+        visible={isFilterModalVisible}
+        onClose={() => setIsFilterModalVisible(false)}
+        onApply={handleApplyFilters}
+        onClear={handleClearAllFilters}
+        currentFilters={activeFilters}
+        options={filterOptions}
+      />
     </SafeAreaView>
-
   );
-};
-
-
-function makeStyles(colors) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      backgroundColor: colors.background,
-    },
-    welcomeText: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-      color: colors.text,
-    },
-    detailText: {
-      fontSize: 16,
-      marginBottom: 10,
-      color: '#34495e',
-    },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    errorText: {
-      color: 'red',
-      fontSize: 16,
-      marginBottom: 20,
-      textAlign: 'center',
-    }
-  })
 };
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FFFFFF" },
   screen: { flex: 1, backgroundColor: "#FFFFFF" },
-  // HEADER
-  headerWrap: { paddingHorizontal: 18, marginTop: 12 },
-  headerGradient: {
-    borderRadius: 26,
-    padding: 16,
-    paddingBottom: 18,
-    shadowColor: "#9A8BFF",
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 12 },
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  welcomeText: { color: "#5A6B6F", fontSize: 14, fontWeight: "400", },
-  appName: { color: "#2F4750", fontSize: 28, fontWeight: "800", marginTop: 2 },
-  appNameShort: { fontSize: 12, color: "#5A6B6F", fontWeight: "600" },
-
-  profileBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  profileImg: { width: "100%", height: "100%" },
-
-  // SEARCH
-  searchWrap: { marginTop: 12 },
-  searchBox: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+  headerWrap: { paddingHorizontal: 20 },
+  header: { backgroundColor: "#FFFFFF", paddingVertical: 16, },
+  welcomeTitle: { fontSize: 24, fontWeight: "700", color: "#2F4750", marginBottom: 16, },
+  welcomeSection: { marginBottom: 20, },
+  welcomeText: { fontSize: 16, color: "#5A6B6F", marginBottom: 4, },
+  appName: { fontSize: 28, fontWeight: "700", },
+  upriseText: { color: "#6E4BFF", },
+  travelText: { color: "#2F4750", },
+  searchContainer: { marginBottom: 20, },
+  searchBox: { backgroundColor: "#F8F9FA", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E9ECEF", },
+  searchInput: { flex: 1, marginLeft: 10, marginRight: 10, color: "#2F4750", fontSize: 16, },
+  separator: { height: 1, backgroundColor: "#E9ECEF", marginVertical: 16, },
+  quickActions: {
     flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#9BDAD9",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 16,
-    elevation: 3,
+    justifyContent: "space-between",
+    marginBottom: 16,
+    gap: 12,
   },
-  searchInput: { flex: 1, marginLeft: 10, color: "#45686C" },
-
-  // QUICK ACTIONS
-  quickRowWrap: { marginTop: 12 },
-  quickScrollContent: { paddingVertical: 8, paddingLeft: 2, paddingRight: 8 },
   quickActionBtn: {
-    width: 110,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginRight: 12,
+    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#B8AFFF",
-    shadowOpacity: 0.09,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 18,
-    elevation: 4,
-  },
-  quickIconWrap: { marginBottom: 6 },
-  quickLabel: { color: "#fff", fontWeight: "700", fontSize: 13 },
-
-  // SECTIONS
-  section: { marginTop: 18, paddingHorizontal: 18 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#23383A" },
-  seeAll: { color: "#5E8B8F", fontWeight: "700" },
-
-  // DESTINOS cards
-  destinosScroll: { paddingLeft: 2, paddingBottom: 6 },
-  destCard: {
-    width: Math.round(width * 0.78),
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    overflow: "hidden",
-    shadowColor: "#A7BBCF",
-    shadowOpacity: 0.09,
-    shadowOffset: { width: 0, height: 12 },
-    shadowRadius: 20,
+    paddingVertical: 16,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 5,
   },
-  destImageWrap: { height: 170, backgroundColor: "#F6FBFF" },
-  destImage: { width: "100%", height: "100%" },
-  destOverlay: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70 },
-  pill: { position: "absolute", top: 12, left: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  pillText: { color: "#fff", fontWeight: "800" },
-
-  destBody: { paddingHorizontal: 14, paddingVertical: 12 },
-  destRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  destTitle: { fontSize: 18, fontWeight: "800" },
-  destPrice: { fontSize: 16, fontWeight: "800" },
-
-  locationRow: { flexDirection: "row", alignItems: "center", marginTop: 6 },
-  locationText: { fontSize: 12, color: "#6A8B90", marginLeft: 6 },
-  destDesc: { marginTop: 8, color: "#556B6D", fontSize: 13 },
-
-  metaRow: { flexDirection: "row", marginTop: 10, alignItems: "center" },
-  metaItem: { flexDirection: "row", alignItems: "center", marginRight: 16 },
-  metaText: { marginLeft: 6, color: "#6A8B90", fontSize: 12 },
-
-  ratingRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
-  ratingText: { marginLeft: 8, color: "#6A8B90", fontSize: 12 },
-
-  // RESTAURANTS
-  restContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 12,
-    shadowColor: "#C7EAE6",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 18,
-    elevation: 4,
+  quickLabel: {
+    marginTop: 8,
+    fontSize: 13,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
-  restCard: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F2F6F6" },
-  restLeft: {},
-  restName: { fontSize: 15, fontWeight: "800", color: "#23383A" },
-  restType: { color: "#6A8B90", marginTop: 4, fontSize: 12 },
-  restMeta: { flexDirection: "row", alignItems: "center", marginTop: 6 },
-  restDistance: { marginLeft: 10, color: "#6A8B90" },
-  restIcon: { width: 56, height: 56, borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  section: { marginTop: 24, paddingHorizontal: 20, },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16, },
+  sectionTitle: { fontSize: 20, fontWeight: "700", color: "#2F4750", },
+  seeAll: { color: "#6E4BFF", fontWeight: "600", fontSize: 14, },
+  locationText: { fontSize: 14, color: "#6A8B90", marginLeft: 6, },
+  ratingContainer: { flexDirection: "row", alignItems: "center", },
+  starsRow: { flexDirection: "row", alignItems: "center", marginRight: 6, },
+  ratingText: { fontSize: 12, color: "#6A8B90", marginRight: 4, fontWeight: "600", },
+  reviewsText: { fontSize: 12, color: "#6A8B90", },
+  activityCard: { backgroundColor: "#6E4BFF", borderRadius: 16, padding: 20, },
+  activityTitle: { fontSize: 18, fontWeight: "700", color: "#FFFFFF", marginBottom: 8, },
+  activityDescription: { fontSize: 14, color: "#FFFFFF", opacity: 0.9, lineHeight: 20, marginBottom: 16, },
+  exploreNowButton: { backgroundColor: "#FFFFFF", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, alignSelf: "flex-start", },
+  exploreNowText: { color: "#6E4BFF", fontWeight: "700", fontSize: 14, },
+  exploreScroll: { paddingBottom: 6, },
+  exploreCard: { width: 120, alignItems: "center", marginRight: 16, },
+  exploreIcon: { width: 60, height: 60, backgroundColor: "#F8F9FA", borderRadius: 16, justifyContent: "center", alignItems: "center", marginBottom: 8, },
+  exploreTitle: { fontSize: 12, fontWeight: "600", color: "#2F4750", textAlign: "center", },
 
-  // PROMO
-  promoCard: { flexDirection: "row", borderRadius: 18, overflow: "hidden", marginVertical: 6, shadowColor: "#CDEBF1", shadowOpacity: 0.06, shadowOffset: { width: 0, height: 12 }, shadowRadius: 18, elevation: 5 },
-  promoLeft: { flex: 1, padding: 16, justifyContent: "center" },
-  promoRight: { width: 120, height: 120, alignItems: "center", justifyContent: "center", padding: 8, backgroundColor: "#fff" },
-  promoImg: { width: 100, height: 100, borderRadius: 12 },
-  promoTitle: { fontSize: 18, fontWeight: "800", color: "#23383A" },
-  promoText: { marginTop: 6, color: "#556B6D" },
-  promoBtn: { marginTop: 10, backgroundColor: "#23383A", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, alignSelf: "flex-start" },
-  promoBtnText: { color: "#fff", fontWeight: "800" },
+  
+  destinosScroll: { 
+    paddingBottom: 6, 
+    alignItems: 'flex-start', 
+  },
+  destCard: { 
+    width: Math.round(width * 0.78),
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  destImageWrap: { 
+    height: 160, 
+    backgroundColor: "#F8F9FA", 
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  }, 
+  destImage: { width: "100%", height: "100%", },
+  destBody: { padding: 12, },
+  destTitle: { 
+    fontSize: 16, 
+    fontWeight: "700", 
+    color: "#2F4750", 
+    marginBottom: 4, 
+    numberOfLines: 2,
+    minHeight: 40, 
+  },
+  destDesc: { 
+    fontSize: 12, 
+    color: "#5A6B6F", 
+    lineHeight: 16, 
+    marginTop: 6, 
+    numberOfLines: 2,
+  },
+  ratingRow: { marginTop: 8, },
 
-  // EXPLORE MORE
-  exploreScroll: { paddingVertical: 6 },
-  smallCard: { width: 120, marginRight: 14, borderRadius: 14, overflow: "hidden", backgroundColor: "#fff", shadowColor: "#CFEFE8", shadowOpacity: 0.06, shadowOffset: { width: 0, height: 10 }, shadowRadius: 16, elevation: 4 },
-  smallImg: { width: "100%", height: 78 },
-  smallTitle: { padding: 8, fontSize: 13, fontWeight: "700", color: "#23383A" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    width: "90%",
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#2F4750",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButtonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#E9ECEF",
+    paddingTop: 16,
+  },
+  collapsibleSection: {
+    marginBottom: 8,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  collapsibleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2F4750',
+  },
+  collapsibleContent: {
+    padding: 12,
+    backgroundColor: '#F8F9FA',
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  collapsibleEmpty: {
+    fontSize: 14,
+    color: '#8DA6A9',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  checkboxLabel: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#2F4750",
+  },
+  
+  resultsContainer: {
+    paddingHorizontal: 10,
+  },
+  resultsGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
+  },
+  resultsEmpty: {
+    fontSize: 16,
+    color: "#6A8B90",
+    textAlign: "center",
+    marginTop: 40,
+  },
+  resultCard: {
+    width: (width - 40) / 2 - 5,
+    margin: 5,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  resultImage: {
+    width: "100%",
+    height: 110,
+    backgroundColor: "#F8F9FA",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: 'hidden',
+  },
+  resultBody: {
+    padding: 10,
+  },
+  resultTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#2F4750",
+    paddingTop: 0,
+    numberOfLines: 2,
+    minHeight: 38, 
+  },
+  resultLocationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  resultLocationText: {
+    fontSize: 12,
+    color: "#6A8B90",
+    marginLeft: 4,
+  },
+  resultCategory: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6E4BFF",
+    paddingVertical: 8,
+    paddingBottom: 0,
+  },
+  resultsHeaderContainer: {
+    paddingHorizontal: 10,
+    marginVertical: 16,
+  },
+  resultsTitleText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2F4750",
+    marginBottom: 12,
+  },
+  filterTagContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  filterTagLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#5A6B6F',
+    marginRight: 8,
+  },
+  filterTag: {
+    backgroundColor: '#E9ECEF',
+    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginRight: 5,
+    marginBottom: 5,
+  },
+  filterTagChipText: {
+    fontSize: 14,
+    color: '#2F4750',
+    fontWeight: '500',
+  },
+  
+  cardActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E9ECEF',
+  },
+  cardButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardButtonPrimary: {
+    backgroundColor: '#6E4BFF',
+    marginRight: 5,
+  },
+  cardButtonSecondary: {
+    backgroundColor: '#E9ECEF',
+    marginLeft: 5,
+  },
+  cardButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  cardButtonTextSecondary: {
+    color: '#2F4750',
+    fontWeight: '600',
+    fontSize: 14,
+  },
 });
 
 export default HomeScreen;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { fetchDestinosAPI } from "../api/apiDestinos";
 import { getUsuarioProfileLocal } from "../bd/UsuarioSQLite";
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get("window");
 
@@ -215,8 +216,8 @@ const ResultsHeader = ({ count, search, activeFilters }) => {
   );
 };
 
-
-const renderStars = (rating = 4.9, reviews = 342) => {
+// ❗️ Componente renderStars con defaults seguros (0)
+const renderStars = (rating = 0, reviews = 0) => {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   return (
@@ -258,6 +259,7 @@ const ExploreCard = ({ item }) => {
   );
 };
 
+// --- Componente Section (Llama a renderStars con valores correctos) ---
 const Section = ({ title, data, navigation }) => {
   const [selectedItemId, setSelectedItemId] = useState(null);
 
@@ -267,9 +269,6 @@ const Section = ({ title, data, navigation }) => {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAll}>Ver todo</Text>
-        </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinosScroll}>
         {data.map((d) => (
@@ -291,11 +290,11 @@ const Section = ({ title, data, navigation }) => {
               <Text style={styles.locationText}>{d.ubicacion}</Text>
               <Text style={styles.destDesc} numberOfLines={2}>{d.descripcion}</Text>
               <View style={styles.ratingRow}>
-                {renderStars(d.valoracionPromedio, d.numReviews || 342)}
+                {/* ❗️ Llama a renderStars con defaults seguros */}
+                {renderStars(d.valoracionPromedio, d.numReviews || 0)}
               </View>
               {selectedItemId === d.id && (
                 <View style={styles.cardActionsContainer}>
-
                   <TouchableOpacity style={[styles.cardButton, styles.cardButtonSecondary]} onPress={() => navigation.navigate('DestinoDetailScreen', { destinoId: d.id })}>
                     <Text style={styles.cardButtonTextSecondary}>Más Detalles</Text>
                   </TouchableOpacity>
@@ -308,6 +307,7 @@ const Section = ({ title, data, navigation }) => {
     </View>
   );
 };
+
 
 const HomeScreenContent = ({ data, recommended, navigation }) => {
   const destacados = data.filter((d) => d.destacado);
@@ -408,29 +408,37 @@ const HomeScreen = ({ navigation }) => {
   });
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
-  // Carga inicial
+  // ❗️ Carga de animaciones (solo se ejecuta una vez)
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(slide, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.spring(scale, { toValue: 1, friction: 8, useNativeDriver: true }),
     ]).start();
+  }, [fade, slide, scale]); 
 
-    const loadAllData = async () => {
-      try {
-        setLoading(true);
-        const profile = getUsuarioProfileLocal();
-        setUserProfile(profile);
-        const res = await fetchDestinosAPI({});
-        setAllDestinos(res.data || []);
-      } catch (error) {
-        console.error("Error en la carga inicial:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadAllData();
-  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadAllData = async () => {
+        try {
+          setLoading(true); // Mostrar spinner en cada recarga
+          const profile = getUsuarioProfileLocal();
+          setUserProfile(profile);
+          const res = await fetchDestinosAPI({}); // Pedir datos frescos
+          setAllDestinos(res.data || []);
+        } catch (error) {
+          console.error("Error en la carga de datos:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadAllData();
+    }, []) 
+  );
+
+
 
   const filterOptions = useMemo(() => {
     const getUniqueValues = (key) => [
@@ -446,6 +454,7 @@ const HomeScreen = ({ navigation }) => {
       categoriaActividades: getUniqueArrayValues('categoriaActividades'),
     };
   }, [allDestinos]);
+
 
   const recommendedDestinos = useMemo(() => {
     if (!userProfile || !allDestinos.length) {
@@ -505,7 +514,6 @@ const HomeScreen = ({ navigation }) => {
     setFilteredDestinos(tempFiltered);
   }, [search, activeFilters, allDestinos]);
 
-
   const handleBuscar = () => Keyboard.dismiss();
 
   const handleClearAllFilters = () => {
@@ -532,7 +540,7 @@ const HomeScreen = ({ navigation }) => {
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* HEADER */}
+
         <Animated.View
           style={[
             styles.headerWrap,
@@ -591,6 +599,7 @@ const HomeScreen = ({ navigation }) => {
         {loading ? (
           <ActivityIndicator size="large" color="#6E4BFF" style={{ marginTop: 40 }} />
         ) : isFiltering ? (
+          // MODO FILTRO
           <View style={styles.resultsContainer}>
             <ResultsHeader 
               count={filteredDestinos.length}
@@ -614,7 +623,6 @@ const HomeScreen = ({ navigation }) => {
             )}
           </View>
         ) : (
-        
           <HomeScreenContent data={allDestinos} recommended={recommendedDestinos} navigation={navigation}/>
         )}
       </ScrollView>
@@ -686,11 +694,9 @@ const styles = StyleSheet.create({
   exploreCard: { width: 120, alignItems: "center", marginRight: 16, },
   exploreIcon: { width: 60, height: 60, backgroundColor: "#F8F9FA", borderRadius: 16, justifyContent: "center", alignItems: "center", marginBottom: 8, },
   exploreTitle: { fontSize: 12, fontWeight: "600", color: "#2F4750", textAlign: "center", },
-
-  
   destinosScroll: { 
     paddingBottom: 6, 
-    alignItems: 'flex-start', 
+    alignItems: 'flex-start',
   },
   destCard: { 
     width: Math.round(width * 0.78),
@@ -719,7 +725,6 @@ const styles = StyleSheet.create({
     fontWeight: "700", 
     color: "#2F4750", 
     marginBottom: 4, 
-    numberOfLines: 2,
     minHeight: 40, 
   },
   destDesc: { 
@@ -730,7 +735,7 @@ const styles = StyleSheet.create({
     numberOfLines: 2,
   },
   ratingRow: { marginTop: 8, },
-
+  
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -854,8 +859,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#2F4750",
     paddingTop: 0,
-    numberOfLines: 2,
-    minHeight: 38, 
+    minHeight: 38,
   },
   resultLocationRow: {
     flexDirection: "row",

@@ -12,7 +12,6 @@ import RegisterScreen from './frontend/src/screens/Auth/RegisterScreen';
 import HomeScreen from './frontend/src/screens/HomeScreen';
 import ProfileScreen from './frontend/src/screens/ProfileScreen';
 import PaymentScreen from './frontend/src/screens/PaymentScreen';
-import DestinationDetailScreen from './frontend/src/screens/DestinationDetailScreen';
 import SettingsScreen from './frontend/src/screens/SettingScreen';
 import ForoListScreen from './frontend/src/screens/ForoListScreen';
 import ForoDetailScreen from './frontend/src/screens/ForoDetailScreen';
@@ -89,7 +88,6 @@ const SettingsStackNavigator = () => {
       <ProfileStack.Screen name="Home" component={HomeScreen} options={{ title: 'Bienvenido' }} />
       <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi Perfil' }} />
       <ProfileStack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pago' }} />
-      <ProfileStack.Screen name="DestinationDetail" component={DestinationDetailScreen} options={{ title: 'Detalles' }} />
     </ProfileStack.Navigator>
   );
 };

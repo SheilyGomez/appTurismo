@@ -11,16 +11,9 @@ import HomeScreen from './frontend/src/screens/HomeScreen';
 import ProfileScreen from './frontend/src/screens/ProfileScreen';
 import PaymentScreen from './frontend/src/screens/PaymentScreen';
 import DestinationDetailScreen from './frontend/src/screens/DestinationDetailScreen';
-import SettingsScreen from './frontend/src/screens/SettingScreen';
-import ForoListScreen from './frontend/src/screens/ForoListScreen';
-import ForoDetailScreen from './frontend/src/screens/ForoDetailScreen';
-import CrearForoScreen from './frontend/src/screens/CrearForoScreen';
-import EditProfileScreen from './frontend/src/screens/EditProfileScreen';
+import CalendarScreen from './frontend/src/screens/CalendarService';
 import ItinerarioScreen from './frontend/src/screens/ItinerarioScreen';
 import CrearItinerarioScreen from './frontend/src/screens/CrearItinerarioScreen';
-import DestinoDetailScreen from './frontend/src/screens/DestinoDetailScreen';
-import ReservaScreen from './frontend/src/screens/ReservaScreen';
-import MapScreen from './frontend/src/screens/MapScreen';
 
 // --- Instancias de Navigators ---
 const AuthStack = createStackNavigator();
@@ -51,6 +44,7 @@ const HomeStackNavigator = () => {
       <HomeStack.Screen name="Settings" component={SettingsScreen} />
       <HomeStack.Screen name="ItinerarioScreen" component={ItinerarioScreen} />
       <HomeStack.Screen name="DestinoDetailScreen" component={DestinoDetailScreen} />
+      <HomeScreen.Screen name="CalendarScreen" component={CalendarScreen} />
       <HomeStack.Screen name="ReservaScreen" component={ReservaScreen} />
       <HomeStack.Screen name="PaymentScreen" component={PaymentScreen} />
     </HomeStack.Navigator>

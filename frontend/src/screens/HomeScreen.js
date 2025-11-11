@@ -19,7 +19,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { fetchDestinosAPI } from "../api/apiDestinos";
 import { getUsuarioProfileLocal } from "../bd/UsuarioSQLite";
 
 const { width } = Dimensions.get("window");

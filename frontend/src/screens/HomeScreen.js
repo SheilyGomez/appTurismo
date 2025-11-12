@@ -584,13 +584,13 @@ const HomeScreen = ({ navigation }) => {
                 icon={<Ionicons name="calendar-outline" size={24} color="#FFFFFF" />}
                 label="Reservas"
                 color="#03A9F4"
-                onPress={() => {}}
+                onPress={() => navigation.navigate('HistorialTab')}
               />
               <QuickAction
                 icon={<Ionicons name="chatbubbles-outline" size={24} color="#FFFFFF" />}
                 label="Foros"
                 color="#FF7043"
-                onPress={() => {}}
+                onPress={() => navigation.navigate('ForosTab')}
               />
             </View>
           </View>

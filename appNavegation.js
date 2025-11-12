@@ -20,6 +20,8 @@ import EditProfileScreen from './frontend/src/screens/EditProfileScreen';
 import MapScreen from './frontend/src/screens/MapScreen';
 import DestinoDetailScreen from './frontend/src/screens/DestinoDetailScreen';
 import ReservaScreen from './frontend/src/screens/ReservaScreen';
+import HistorialReservasScreen from './frontend/src/screens/HistorialReservasScreen';
+import DetalleReservaScreen from './frontend/src/screens/DetalleReservaScreen';
 //EditProfileScreen
 
 // --- Instancias de Navigators ---
@@ -30,6 +32,7 @@ const ForoStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const MapStack = createStackNavigator();
+const HistorialStack = createStackNavigator();
 
 
 const AuthNavigator = () => {
@@ -81,16 +84,6 @@ const ProfileStackNavigator = () => {
     </ProfileStack.Navigator>
   );
 };
-const SettingsStackNavigator = () => {
-  return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-      <ProfileStack.Screen name="Settings" component={SettingsScreen} />
-      <ProfileStack.Screen name="Home" component={HomeScreen} options={{ title: 'Bienvenido' }} />
-      <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi Perfil' }} />
-      <ProfileStack.Screen name="Payment" component={PaymentScreen} options={{ title: 'Pago' }} />
-    </ProfileStack.Navigator>
-  );
-};
 
 //Componente del Stack Navigator para el Mapa ---
 const MapStackNavigator = () => {
@@ -100,6 +93,15 @@ const MapStackNavigator = () => {
             <MapStack.Screen name="DestinoDetail" component={DestinoDetailScreen} />
         </MapStack.Navigator>
     );
+};
+
+const HistorialStackNavigator = () => {
+  return (
+    <HistorialStack.Navigator screenOptions={{ headerShown: false }}>
+      <HistorialStack.Screen name="HistorialReservas" component={HistorialReservasScreen} />
+      <HistorialStack.Screen name="DetalleReserva" component={DetalleReservaScreen} />
+    </HistorialStack.Navigator>
+  );
 };
 
 
@@ -119,12 +121,12 @@ const AppTabNavigator = () => {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'MapaTab') {
               iconName = focused ? 'map' : 'map-outline';
+          } else if (route.name === 'HistorialTab') {
+            iconName = focused ? 'receipt' : 'receipt-outline';
           } else if (route.name === 'ForosTab') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'PerfilTab') {
             iconName = focused ? 'person' : 'person-outline';
-          }else if (route.name === 'SettingsTab') {
-            iconName = focused ? 'settings' : 'settings-outline';
           }
           
 
@@ -157,6 +159,11 @@ const AppTabNavigator = () => {
           options={{ title: 'Mapa' }}
       />
       <Tab.Screen
+        name="HistorialTab"
+        component={HistorialStackNavigator}
+        options={{ title: 'Historial' }}
+      />
+      <Tab.Screen
         name="ForosTab"
         component={ForoStackNavigator}
         options={{ title: 'Foros' }}
@@ -165,11 +172,6 @@ const AppTabNavigator = () => {
         name="PerfilTab"
         component={ProfileStackNavigator}
         options={{ title: 'Perfil' }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsStackNavigator} 
-        options={{ title: 'Settings' }}
       />
     </Tab.Navigator>
   );

@@ -24,7 +24,7 @@
       "package": "com.anonymous.appTurismo",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAGFZ91jooY4eYMjCJXLz51IUcWO3ydoUk" 
+          "apiKey": "AIzaSyAGFZ91jooY4eYMjCJXLz51IUcWO3ydoUk"
         }
       }
     },
@@ -32,7 +32,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-web-browser"
     ]
   }
 }

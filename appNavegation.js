@@ -22,6 +22,9 @@ import DestinoDetailScreen from './frontend/src/screens/DestinoDetailScreen';
 import ReservaScreen from './frontend/src/screens/ReservaScreen';
 import HistorialReservasScreen from './frontend/src/screens/HistorialReservasScreen';
 import DetalleReservaScreen from './frontend/src/screens/DetalleReservaScreen';
+import ItinerarioScreen from './frontend/src/screens/ItinerarioScreen';
+import CrearItinerarioScreen from './frontend/src/screens/CrearItinerarioScreen ';
+
 //EditProfileScreen
 
 // --- Instancias de Navigators ---
@@ -33,7 +36,7 @@ const ProfileStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const MapStack = createStackNavigator();
 const HistorialStack = createStackNavigator();
-
+const ItinerarioStack = createStackNavigator();
 
 const AuthNavigator = () => {
 
@@ -104,6 +107,15 @@ const HistorialStackNavigator = () => {
   );
 };
 
+// NUEVO STACK PARA ITINERARIOS
+const ItinerarioStackNavigator = () => {
+  return (
+    <ItinerarioStack.Navigator screenOptions={{ headerShown: false }}>
+      <ItinerarioStack.Screen name="ItinerarioList" component={ItinerarioScreen} />
+      <ItinerarioStack.Screen name="CrearItinerario" component={CrearItinerarioScreen} />
+    </ItinerarioStack.Navigator>
+  );
+};
 
 const AppTabNavigator = () => {
   const { colors } = useContext(ThemeContext);
@@ -127,6 +139,8 @@ const AppTabNavigator = () => {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'PerfilTab') {
             iconName = focused ? 'person' : 'person-outline';
+            } else if (route.name === 'ItinerariosTab') { // NUEVA PESTAÑA
+            iconName = focused ? 'calendar' : 'calendar-outline';
           }
           
 
@@ -158,6 +172,13 @@ const AppTabNavigator = () => {
           component={MapStackNavigator}
           options={{ title: 'Mapa' }}
       />
+
+      <Tab.Screen
+        name="ItinerariosTab" // NUEVA PESTAÑA
+        component={ItinerarioStackNavigator}
+        options={{ title: 'Viajes' }}
+      />
+
       <Tab.Screen
         name="HistorialTab"
         component={HistorialStackNavigator}

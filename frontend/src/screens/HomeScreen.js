@@ -578,7 +578,7 @@ const HomeScreen = ({ navigation }) => {
                 icon={<Ionicons name="map-outline" size={24} color="#FFFFFF" />}
                 label="Itinerarios"
                 color="#7C4DFF"
-                onPress={() => {}}
+                onPress={() => navigation.navigate('ItinerariosTab')}
               />
               <QuickAction
                 icon={<Ionicons name="calendar-outline" size={24} color="#FFFFFF" />}

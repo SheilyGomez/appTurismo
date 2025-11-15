@@ -1,53 +1,64 @@
-// backend/controllers/reservaController.js
 const admin = require("firebase-admin");
 const db = admin.firestore();
 
 /**
- * -----------------------------------------------------------------
- * 1. CREAR UNA NUEVA RESERVA
- * -----------------------------------------------------------------
+ * Helper para generar un código de reserva aleatorio
+ * Formato: UPR-ABC123
  */
+function generarCodigoReserva() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const nums = '0123456789';
+  let charPart = '';
+  let numPart = '';
+  for (let i = 0; i < 3; i++) {
+    charPart += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  for (let i = 0; i < 3; i++) {
+    numPart += nums.charAt(Math.floor(Math.random() * nums.length));
+  }
+  return `UPR-${charPart}${numPart}`;
+}
+
 exports.crearReserva = async (req, res) => {
   try {
-    // 1. Obtener el ID del usuario autenticado (gracias a authMiddleware)
     const usuarioId = req.user.uid;
-
-    // 2. Obtener datos del cuerpo de la petición
-    const { destinoId, fechaReserva, numeroPersonas, comentarios } = req.body;
+    
+    const { destinoId, fechaReserva, numeroPersonas, comentarios, actividadReservada } = req.body;
 
     if (!destinoId || !fechaReserva || !numeroPersonas) {
-      return res.status(400).json({ message: "Faltan campos obligatorios (destinoId, fechaReserva, numeroPersonas)." });
+      return res.status(400).json({ message: "Faltan campos obligatorios." });
     }
 
-    // 3. Obtener los datos "congelados" del Usuario y Destino
-    // (Este es el paso clave que pediste)
-    
-    // --- Obtener datos del Usuario ---
+
     const userDoc = await db.collection('usuarios').doc(usuarioId).get();
     if (!userDoc.exists) {
       return res.status(404).json({ message: "El perfil de usuario no existe." });
     }
     const usuarioData = userDoc.data();
 
-    // --- Obtener datos del Destino ---
     const destinoDoc = await db.collection('destinos').doc(destinoId).get();
     if (!destinoDoc.exists) {
       return res.status(404).json({ message: "El destino no existe." });
     }
     const destinoData = destinoDoc.data();
 
-    // 4. Construir el objeto de la nueva reserva
+    const precioPorPersona = destinoData.precioPorPersona || 0;
+    const precioTotal = precioPorPersona * parseInt(numeroPersonas, 10);
+
     const nuevaReserva = {
       usuarioId: usuarioId,
       destinoId: destinoId,
-      
-      fechaReserva: new Date(fechaReserva), // Convertir string a Fecha
+
+      codigoReserva: generarCodigoReserva(),
+      precioTotal: precioTotal,
+      actividadReservada: actividadReservada || "Reserva General",
+
+      fechaReserva: new Date(fechaReserva),
       numeroPersonas: parseInt(numeroPersonas, 10),
       comentarios: comentarios || null,
-      estado: 'confirmada', // O 'pendiente' si necesitas aprobación
+      estado: 'confirmada',
       fechaCreacion: admin.firestore.FieldValue.serverTimestamp(),
 
-      // Datos congelados
       usuarioInfo: {
         nombreCompleto: usuarioData.nombreCompleto,
         email: usuarioData.email,
@@ -56,11 +67,11 @@ exports.crearReserva = async (req, res) => {
       destinoInfo: {
         nombre: destinoData.nombre,
         ubicacion: destinoData.ubicacion,
-        imagenPrincipal: destinoData.imagenPrincipal
+        imagenPrincipal: destinoData.imagenPrincipal,
+        precioPorPersona: precioPorPersona
       }
     };
 
-    // 5. Guardar en la base de datos
     const docRef = await db.collection('reservas').add(nuevaReserva);
 
     res.status(201).json({ 
@@ -75,18 +86,13 @@ exports.crearReserva = async (req, res) => {
   }
 };
 
-/**
- * -----------------------------------------------------------------
- * 2. OBTENER "MIS RESERVAS" (del usuario autenticado)
- * -----------------------------------------------------------------
- */
 exports.getMisReservas = async (req, res) => {
   try {
     const usuarioId = req.user.uid;
 
     const snapshot = await db.collection('reservas')
       .where('usuarioId', '==', usuarioId)
-      .orderBy('fechaReserva', 'desc') // Mostrar las más próximas primero
+      // .orderBy('fechaReserva', 'desc') // comentado para evitar error de índice
       .get();
 
     if (snapshot.empty) {
@@ -98,6 +104,12 @@ exports.getMisReservas = async (req, res) => {
       ...doc.data()
     }));
 
+    reservas.sort((a, b) => {
+      const dateA = a.fechaReserva.toMillis ? a.fechaReserva.toMillis() : new Date(a.fechaReserva).getTime();
+      const dateB = b.fechaReserva.toMillis ? b.fechaReserva.toMillis() : new Date(b.fechaReserva).getTime();
+      return dateB - dateA; 
+    });
+
     res.status(200).json(reservas);
 
   } catch (error) {
@@ -106,15 +118,10 @@ exports.getMisReservas = async (req, res) => {
   }
 };
 
-/**
- * -----------------------------------------------------------------
- * 3. CANCELAR UNA RESERVA
- * -----------------------------------------------------------------
- */
 exports.cancelarReserva = async (req, res) => {
   try {
     const usuarioId = req.user.uid;
-    const { reservaId } = req.params; // ID de la reserva a cancelar
+    const { reservaId } = req.params;
 
     const reservaRef = db.collection('reservas').doc(reservaId);
     const doc = await reservaRef.get();
@@ -123,17 +130,10 @@ exports.cancelarReserva = async (req, res) => {
       return res.status(404).json({ message: "Reserva no encontrada." });
     }
 
-    // Seguridad: Asegurarnos que el usuario solo cancele SUS propias reservas
     if (doc.data().usuarioId !== usuarioId) {
       return res.status(403).json({ message: "No tienes permiso para cancelar esta reserva." });
     }
     
-    // Opcional: No permitir cancelar reservas que ya pasaron
-    // if (doc.data().fechaReserva.toDate() < new Date()) {
-    //   return res.status(400).json({ message: "No puedes cancelar una reserva que ya ha pasado." });
-    // }
-
-    // Actualizar el estado a "cancelada"
     await reservaRef.update({
       estado: 'cancelada'
     });

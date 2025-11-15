@@ -1,4 +1,4 @@
-//frontend/src/context/ThemeContext.js
+// frontend/src/context/ThemeContext.js
 import { createContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -26,11 +26,28 @@ export const ThemeProvider = ({children})=>{
         setDarkMode(newTheme);
 
         try{
-            await AsyncStorage.setItem('theme', newTheme.toString());
+            await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
         }catch(error){
             console.log("Error saving theme: ", error);
         }
     };
+
+    const homeColors = {
+        primary: '#6E4BFF',
+        background: darkMode ? '#121212' : '#FFFFFF',
+        surface: darkMode ? '#1E1E1E' : '#FFFFFF',
+        surfaceLight: darkMode ? '#2C2C2C' : '#F8F9FA',
+        border: darkMode ? '#3A3A3A' : '#E9ECEF',
+        textPrimary: darkMode ? '#EAEAEA' : '#2F4750',
+        textSecondary: darkMode ? '#B0B0B0' : '#5A6B6F',
+        textTertiary: darkMode ? '#9E9E9E' : '#6A8B90',
+        textMuted: darkMode ? '#808080' : '#8DA6A9',
+        white: '#FFFFFF',
+        black: '#000000',
+        yellowStar: '#FFCC5C',
+        redClear: '#FF6347',
+    };
+
     const theme = {
         darkMode, 
         toggleDarkMode,
@@ -43,17 +60,15 @@ export const ThemeProvider = ({children})=>{
             sub_background: darkMode ? '#424242ff' : '#ffffffff',
             inputBackground: darkMode ? '#444444ff' : '#F5F5F5',
             inputBorder: darkMode ? '#666' :'#E0E0E0',
-
-            //buttonAdd: darkMode ? '#28a745' : '#47b661ff',
             buttonCrear: darkMode? '#F28B30':'#F28B30',
             cancelarbutton: darkMode ? '#c9874eff' :'#F28B30',
-            
-        }
+        },
+        homeColors: homeColors
     };
+
     return (
         <ThemeContext.Provider value={theme}>
             {children}
         </ThemeContext.Provider>
     );
 };
-    

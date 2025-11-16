@@ -1,6 +1,8 @@
 // frontend/src/context/ThemeContext.js
 import { createContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Header } from "@react-navigation/stack";
+import { BottomTabBar } from "@react-navigation/bottom-tabs";
 
 export const ThemeContext = createContext();
 
@@ -62,6 +64,11 @@ export const ThemeProvider = ({children})=>{
             inputBorder: darkMode ? '#666' :'#E0E0E0',
             buttonCrear: darkMode? '#F28B30':'#F28B30',
             cancelarbutton: darkMode ? '#c9874eff' :'#F28B30',
+            textPrimary: darkMode ? '#C0DE7B' :'#C0DE7B',
+            header: darkMode? '#55A6C3': '#037a85ff',
+            bottomItinerario :darkMode? '#79B425': '#67853dff',  
+            colorVerde: darkMode? '#79B425': '#658636ff'
+
         },
         homeColors: homeColors
     };

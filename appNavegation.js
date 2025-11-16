@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'; // Para los iconos de las pestañas
 import { useTheme } from '@react-navigation/native'; // Para acceder al tema si usas @react-navigation/native >= 5.x y tienes un ThemeContext
 import { ThemeContext } from './frontend/src/context/ThemeContext';
-
+import { SafeAreaView } from 'react-native-safe-area-context'; 
 
 // Asegúrate de que estas rutas sean correctas para tu proyecto.
 import LoginScreen from './frontend/src/screens/Auth/LoginScreen';

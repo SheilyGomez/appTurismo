@@ -2,6 +2,7 @@
   "expo": {
     "name": "appTurismo",
     "slug": "appTurismo",
+    "scheme": "miappdeviajes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

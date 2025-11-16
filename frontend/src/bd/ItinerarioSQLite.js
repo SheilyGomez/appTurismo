@@ -6,7 +6,7 @@ let db;
 const getDatabase = () => {
   if (!db) {
     try {
-      db = SQLite.openDatabase('itinerarios.db');
+      db = SQLite.openDatabaseSync('itinerarios.db'); 
       console.log('Base de datos SQLite abierta correctamente');
     } catch (error) {
       console.error('Error al abrir la base de datos SQLite:', error);
@@ -17,160 +17,98 @@ const getDatabase = () => {
 };
 
 export const initItinerarioDatabase = () => {
-  return new Promise((resolve, reject) => {
+  try {
     const database = getDatabase();
-    
-    database.transaction(
-      tx => {
-        tx.executeSql(
-          `CREATE TABLE IF NOT EXISTS itinerarios (
-            id TEXT PRIMARY KEY,
-            usuarioID TEXT NOT NULL,
-            fechaCreacion INTEGER NOT NULL,
-            fechaInicio INTEGER NOT NULL,
-            fechaFin INTEGER NOT NULL,
-            nombre TEXT NOT NULL,
-            destino TEXT NOT NULL,
-            syncWithGoogle INTEGER DEFAULT 0,
-            googleEventId TEXT
-          );`,
-          [],
-          () => {
-            console.log('Tabla itinerarios creada/existe');
-            resolve();
-          },
-          (_, error) => {
-            console.log('Error creando tabla:', error);
-            reject(error);
-            return false;
-          }
-        );
-      },
-      (error) => {
-        console.error('Error en transacción:', error);
-        reject(error);
-      }
-    );
-  });
+    database.execSync(`
+      CREATE TABLE IF NOT EXISTS itinerarios (
+        id TEXT PRIMARY KEY,
+        usuarioID TEXT NOT NULL,
+        fechaCreacion INTEGER NOT NULL,
+        fechaInicio INTEGER NOT NULL,
+        fechaFin INTEGER NOT NULL,
+        nombre TEXT NOT NULL,
+        destino TEXT NOT NULL,
+        syncWithGoogle INTEGER DEFAULT 0,
+        googleEventId TEXT
+      );
+    `);
+    console.log('Tabla itinerarios creada/verificada con éxito.');
+  } catch (error) {
+    console.error('Error creando la tabla itinerarios:', error);
+    throw error;
+  }
 };
-
 export const addItinerario = (itinerario) => {
-  return new Promise((resolve, reject) => {
+  try {
     const database = getDatabase();
-    
-    database.transaction(
-      tx => {
-        tx.executeSql(
-          `INSERT INTO itinerarios 
-           (id, usuarioID, fechaCreacion, fechaInicio, fechaFin, nombre, destino, syncWithGoogle, googleEventId) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            itinerario.id,
-            itinerario.usuarioID,
-            itinerario.fechaCreacion.getTime(),
-            itinerario.fechaInicio.getTime(),
-            itinerario.fechaFin.getTime(),
-            itinerario.nombre,
-            itinerario.destino,
-            itinerario.syncWithGoogle || 0,
-            itinerario.googleEventId || null
-          ],
-          (_, result) => {
-            resolve(result);
-          },
-          (_, error) => {
-            reject(error);
-            return false;
-          }
-        );
-      },
-      (error) => {
-        reject(error);
-      }
+    database.runSync(
+      `INSERT INTO itinerarios 
+       (id, usuarioID, fechaCreacion, fechaInicio, fechaFin, nombre, destino, syncWithGoogle, googleEventId) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        itinerario.id,
+        itinerario.usuarioID,
+        itinerario.fechaCreacion.getTime(),
+        itinerario.fechaInicio.getTime(),
+        itinerario.fechaFin.getTime(),
+        itinerario.nombre,
+        itinerario.destino,
+        itinerario.syncWithGoogle ? 1 : 0,
+        itinerario.googleEventId || null
+      ]
     );
-  });
+    // runSync no devuelve un resultado útil, solo arroja error si falla.
+    return { success: true, id: itinerario.id };
+  } catch (error) {
+    console.error('Error al añadir itinerario:', error);
+    throw error;
+  }
 };
 
 export const getAllItinerarios = () => {
-  return new Promise((resolve, reject) => {
+  try {
     const database = getDatabase();
+    const results = database.getAllSync(`SELECT * FROM itinerarios ORDER BY fechaInicio DESC`);
     
-    database.transaction(
-      tx => {
-        tx.executeSql(
-          `SELECT * FROM itinerarios ORDER BY fechaInicio DESC`,
-          [],
-          (_, { rows }) => {
-            const itinerarios = rows._array.map(item => ({
-              ...item,
-              fechaCreacion: new Date(item.fechaCreacion),
-              fechaInicio: new Date(item.fechaInicio),
-              fechaFin: new Date(item.fechaFin),
-              syncWithGoogle: Boolean(item.syncWithGoogle)
-            }));
-            resolve(itinerarios);
-          },
-          (_, error) => {
-            reject(error);
-            return false;
-          }
-        );
-      },
-      (error) => {
-        reject(error);
-      }
-    );
-  });
+    // Mapeamos los resultados para convertir timestamps a objetos Date.
+    const itinerarios = results.map(item => ({
+      ...item,
+      fechaCreacion: new Date(item.fechaCreacion),
+      fechaInicio: new Date(item.fechaInicio),
+      fechaFin: new Date(item.fechaFin),
+      syncWithGoogle: Boolean(item.syncWithGoogle)
+    }));
+    
+    return itinerarios;
+  } catch (error) {
+    console.error('Error al obtener todos los itinerarios:', error);
+    throw error;
+  }
 };
 
 export const updateItinerarioGoogleSync = (id, googleEventId) => {
-  return new Promise((resolve, reject) => {
+  try {
     const database = getDatabase();
-    
-    database.transaction(
-      tx => {
-        tx.executeSql(
-          `UPDATE itinerarios SET syncWithGoogle = 1, googleEventId = ? WHERE id = ?`,
-          [googleEventId, id],
-          (_, result) => {
-            resolve(result);
-          },
-          (_, error) => {
-            reject(error);
-            return false;
-          }
-        );
-      },
-      (error) => {
-        reject(error);
-      }
+    database.runSync(
+      `UPDATE itinerarios SET syncWithGoogle = 1, googleEventId = ? WHERE id = ?`,
+      [googleEventId, id]
     );
-  });
+    return { success: true };
+  } catch (error) {
+    console.error('Error al actualizar la sincronización con Google:', error);
+    throw error;
+  }
 };
 
 export const deleteItinerario = (id) => {
-  return new Promise((resolve, reject) => {
+  try {
     const database = getDatabase();
-    
-    database.transaction(
-      tx => {
-        tx.executeSql(
-          `DELETE FROM itinerarios WHERE id = ?`,
-          [id],
-          (_, result) => {
-            resolve(result);
-          },
-          (_, error) => {
-            reject(error);
-            return false;
-          }
-        );
-      },
-      (error) => {
-        reject(error);
-      }
-    );
-  });
+    database.runSync(`DELETE FROM itinerarios WHERE id = ?`, [id]);
+    return { success: true };
+  } catch (error) {
+    console.error('Error al eliminar el itinerario:', error);
+    throw error;
+  }
 };
 
 export default getDatabase;

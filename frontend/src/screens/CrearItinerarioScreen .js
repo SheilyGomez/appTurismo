@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -16,6 +16,8 @@ import { db } from '../auth/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { addItinerario } from '../bd/ItinerarioSQLite';
+import { ThemeContext } from '../context/ThemeContext';
+
 
 const COLORS = {
   primary: '#79B425',
@@ -27,6 +29,9 @@ const COLORS = {
 };
 
 const CrearItinerarioScreen = ({ navigation }) => {
+  const { colors } = useContext(ThemeContext);
+  const styles = createStyles(colors);
+
   const [nombre, setNombre] = useState('');
   const [destino, setDestino] = useState('');
   const [fechaInicio, setFechaInicio] = useState(new Date());
@@ -194,8 +199,8 @@ const CrearItinerarioScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20, alignItems: 'center' },
   title: {
     fontSize: 30,

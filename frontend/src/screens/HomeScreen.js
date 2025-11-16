@@ -681,12 +681,12 @@ const HomeScreenContent = ({ data, recommended, navigation }) => {
             )}
             <View style={styles.section}>
                 <View style={styles.activityCard}>
-                    <Text style={styles.activityTitle}>Bird-Watching</Text>
+                    <Text style={styles.activityTitle}>Avistamiento de Aves</Text>
                     <Text style={styles.activityDescription}>
-                        Unique sunset tours to see rare birds and coastal flights.
+                        Tours únicos al atardecer para ver aves raras y vuelos costeros.
                     </Text>
                     <TouchableOpacity style={styles.exploreNowButton}>
-                        <Text style={styles.exploreNowText}>Explore Now</Text>
+                        <Text style={styles.exploreNowText}>Explorar Ahora</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -694,9 +694,6 @@ const HomeScreenContent = ({ data, recommended, navigation }) => {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Explorar Más</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.seeAll}>More</Text>
-                        </TouchableOpacity>
                     </View>
                     <ScrollView
                         horizontal

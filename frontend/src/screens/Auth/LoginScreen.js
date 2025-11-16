@@ -25,7 +25,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       await login(email, password);
     } catch (error) {
-      Alert.alert('Error de Login', error.message || 'Credenciales inválidas.');
+      Alert.alert('Credenciales inválidas.');
     }
   };
 

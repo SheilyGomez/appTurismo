@@ -4,8 +4,9 @@ import { Platform } from 'react-native';
 import { auth } from '../auth/firebaseConfig'; 
 
 //const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
-const API_BASE_URL = Platform.OS === 'android' ? 'http://192.168.1.20:5000' : 'http://localhost:5000';
+//const API_BASE_URL = Platform.OS === 'android' ? 'http://192.168.1.20:5000' : 'http://localhost:5000';
 //const API_BASE_URL = Platform.OS === 'android' ? 'http://192.168.0.3:5000' : 'http://localhost:5000';
+const API_BASE_URL = Platform.OS === 'android' ? 'https://apiturismo-o2ij.onrender.com' : 'https://apiturismo-o2ij.onrender.com'
 
 const client = axios.create({
   baseURL: API_BASE_URL,

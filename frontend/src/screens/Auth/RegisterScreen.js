@@ -133,7 +133,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert('Registro Exitoso', 'Tu cuenta ha sido creada. ¡Ahora puedes iniciar sesión!');
       navigation.navigate('Login');
     } catch (error) {
-      Alert.alert('Error de Registro', error.message || 'Hubo un problema al registrarte.');
+      Alert.alert('Hubo un problema al registrarte.');
     }
   };
 
